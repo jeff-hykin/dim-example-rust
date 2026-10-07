@@ -13,6 +13,12 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>dimOS example app</title>
+        <!-- inside Desktop, its window bar already names the app, so the page's own heading only shows on its own -->
+        <script>
+            if (parent !== window) {
+                document.documentElement.dataset.inDesktop = ""
+            }
+        </script>
         <link rel="stylesheet" href="../../theme.css" />
         <link rel="stylesheet" href="style.css" />
     </head>

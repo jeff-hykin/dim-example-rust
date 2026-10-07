@@ -20,6 +20,9 @@ h1 {
     text-transform: var(--label-case, none);
     letter-spacing: var(--track-label, 0);
 }
+html[data-in-desktop] header h1 {
+    display: none;
+}
 h2 {
     margin: 0 0 4px;
     font: 600 14px var(--sans);
