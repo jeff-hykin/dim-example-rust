@@ -2,7 +2,7 @@
 
 A showcase [dimOS Desktop](https://github.com/jeff-hykin/dimos-desktop-mirror) app with a Rust server. It shows how to:
 
-- subscribe to a dimos topic and decode it (`/odom`, a `geometry_msgs.PoseStamped`, via zenoh-gateway + the dimos gateway's `/dimos/msgs.js`)
+- subscribe to a dimos topic and decode it (`/odom`, a `geometry_msgs.PoseStamped`, with [dim-app](https://github.com/jeff-hykin/dim-app)'s `DimApp`: zenoh-gateway + the dimos gateway's `/dimos/msgs.js`)
 - publish one (`/cmd_vel`, a `geometry_msgs.Twist`, with a deadman)
 - call the dimos gateway (`GET /dimos/runs`) and another app's public endpoint (`GET /apps/dim-controller/api/status`)
 - post a Desktop notification and open another app
@@ -22,5 +22,5 @@ Desktop → App Store → **Install From URL** → `github.com/jeff-hykin/dim-ex
 - `dimos.yaml`: the contract with Desktop (what it calls, what it offers)
 - `icon.svg`: its icon
 - `flake.nix`: `nix build .#dimosApp` is what Desktop runs
-- `frontend/`: the page (`index.html`, `app.js`, `style.css`), `own_server.js` for its server's endpoints
+- `frontend/`: the page (`index.html`, `app.js`, `style.css`), `own_server.js` for its server's endpoints, `dim-app/` (the vendored [dim-app](https://github.com/jeff-hykin/dim-app) SDK)
 - `server/main.rs`: the server (axum on the unix socket Desktop gives)

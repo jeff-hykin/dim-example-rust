@@ -1,12 +1,9 @@
 // The example page: the same file in all three examples (html, Deno, Rust). Plain ES modules, no build step.
 //
-// Two libraries:
-//   - zenoh-gateway's browser client, by URL (pin the exact version; dimos.yaml `@zenoh-gateway` says which ones this app works with):
-//     subscribe/publish dimos topics through Desktop's zenoh-gateway. For a robot with no internet, vendor it into the app.
-//   - ../../dimos/msgs.js, from the dimos gateway (dimos.yaml `@dimos-gateway: GET /msgs.js`): every dimos message's
-//     decoder/encoder, generated from the dimos that's running, so it always matches it
-import { connect } from "https://esm.sh/gh/jeff-hykin/zenoh-gateway@28c17f0/client/zenoh_gateway.ts"
-import { decodeMessage, geometry_msgs } from "../../dimos/msgs.js"
+// One library: dim-app's DimApp, vendored into ./dim-app (dim-app's tools/vendor.js; nothing loads from the network).
+// It holds the page's connection to Desktop's zenoh-gateway and the codec ../../dimos/msgs.js from the dimos gateway (dimos.yaml `@dimos-gateway: GET /msgs.js`): every dimos message's
+// decoder/encoder, generated from the dimos that's running, so it always matches it.
+import { DimApp } from "./dim-app/source/dim_app.js"
 
 const $ = (id) => document.getElementById(id)
 
@@ -27,22 +24,20 @@ applyTheme()
 addEventListener("storage", applyTheme)
 
 // ── 1 + 2: topics over zenoh-gateway ──
-// dimos's zenoh keys are `dimos/<topic>/<message type>`, and the payload is the LCM encoding of that message.
-const zenoh = await connect(new URL("../../zenoh-gateway", location.href).href, {
+// dimos's zenoh keys are `dimos/<topic>/<message type>`; DimApp decodes and encodes them with msgs.js.
+const app = new DimApp({
+    msgDecodeEndpoint: "../../dimos/msgs.js",
     // a heartbeat lets the gateway publish our deadman (a zero Twist) if this page dies mid-drive
-    heartbeatHz: 5,
-    heartbeatMisses: 3,
+    connectOptions: { heartbeatHz: 5, heartbeatMisses: 3 },
 })
 
-let odom = null
+let unsubscribeOdom = null
 function subscribeOdom() {
-    odom?.close()
-    const key = geometry_msgs.PoseStamped.zenohKey(`dimos/${$("odomTopic").value.replace(/^\/+/, "")}`)
+    unsubscribeOdom?.()
     let count = 0
     let since = performance.now()
-    odom = zenoh.subscribe(key, { delivery: "latest", maxHz: 20 }, (message) => {
-        // the type in the key picks the decoder
-        const pose = decodeMessage(message).pose
+    const options = { type: "geometry_msgs.PoseStamped", delivery: "latest", maxHz: 20 }
+    unsubscribeOdom = app.subscribe($("odomTopic").value, ({ pose }) => {
         const { x, y, z, w } = pose.orientation
         const yaw = Math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z))
         $("x").textContent = pose.position.x.toFixed(2)
@@ -55,20 +50,20 @@ function subscribeOdom() {
             count = 0
             since = now
         }
-    })
+    }, options)
 }
 subscribeOdom()
 $("odomTopic").addEventListener("change", subscribeOdom)
 
 // fields left out are zero
-const twist = (forward, turn) => geometry_msgs.Twist.encode({ linear: { x: forward }, angular: { z: turn } })
+const twist = (forward, turn) => ({ linear: { x: forward }, angular: { z: turn } })
 
 let publisher = null
 async function openPublisher() {
+    const next = await app.publisher($("cmdTopic").value, "geometry_msgs.Twist", { delivery: "latest" })
     publisher?.close()
-    const key = geometry_msgs.Twist.zenohKey(`dimos/${$("cmdTopic").value.replace(/^\/+/, "")}`)
-    publisher = zenoh.publisher(key, { delivery: "latest" })
-    await publisher.setDeadman(twist(0, 0))
+    publisher = next
+    await next.setDeadman(twist(0, 0))
 }
 openPublisher()
 $("cmdTopic").addEventListener("change", openPublisher)
@@ -79,14 +74,14 @@ function hold(button, forward, turn) {
     const start = () => {
         clearInterval(driving)
         driving = setInterval(() => {
-            publisher.put(twist(forward, turn))
+            publisher?.put(twist(forward, turn))
             $("sent").textContent = `sent ${++sent} Twists`
         }, 100)
     }
     const stop = () => {
         clearInterval(driving)
         driving = null
-        publisher.put(twist(0, 0))
+        publisher?.put(twist(0, 0))
     }
     button.addEventListener("pointerdown", start)
     for (const event of ["pointerup", "pointerleave", "pointercancel"]) {
