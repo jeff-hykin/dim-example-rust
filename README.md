@@ -8,7 +8,7 @@ A showcase [dimOS Desktop](https://github.com/jeff-hykin/dimos-desktop-mirror) a
 - post a Desktop notification and open another app
 - offer endpoints for the agent (`agent:`) and private ones for its own page (`private:`)
 
-Read **[Making a dimOS app](https://github.com/jeff-hykin/dimos-desktop-mirror/blob/main/docs/making-an-app.md)** (in the dimOS Desktop repo) for how dimOS apps work. The other examples:
+Read **[Making a dimOS app](https://github.com/jeff-hykin/dimos-desktop-mirror/blob/main/docs/create-apps/index.md)** (in the dimOS Desktop repo) for how dimOS apps work. The other examples:
 [plain HTML](https://github.com/jeff-hykin/dim-example-html) ·
 [Deno](https://github.com/jeff-hykin/dim-example-deno) ·
 [Rust](https://github.com/jeff-hykin/dim-example-rust).
