@@ -2,7 +2,7 @@
 //! Desktop gives.
 //!
 //! What Desktop passes: one env var, `DIMOS_APP`, a JSON object (Desktop's docs/apps.md, "dimos-app-server"):
-//! `{ version, name, socket, url, path, dataDir, desktopUrl, zenohWebUrl, zenohConnect, zenohNamespace, zenohPrefix,
+//! `{ version, name, socket, url, path, dataDir, desktopUrl, zenohGatewayUrl, zenohConnect, zenohNamespace, zenohPrefix,
 //!   dimosDir, dimosPython, recordingsDir }`. Read the fields you use and ignore the rest: new ones can appear.
 //! Requests arrive with the app's path (`/apps/<name>`) already removed: `/api/hello`, `/`, `/app.js`.
 //!

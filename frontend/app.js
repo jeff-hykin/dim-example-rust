@@ -1,10 +1,10 @@
 // The example page: the same file in all three examples (html, Deno, Rust). Plain ES modules, no build step.
 //
 // Two libraries, both imported by URL (pin the exact versions; dimos.yaml's ranges say which ones this app works with):
-//   - zenoh-web's browser client: subscribe/publish dimos topics through Desktop's bridge (dimos.yaml `zenoh-web:`)
+//   - zenoh-gateway's browser client: subscribe/publish dimos topics through Desktop's zenoh-gateway (dimos.yaml `@zenoh-gateway`)
 //   - @dimos/msgs: dimos's LCM message types (decode/encode the bytes a topic carries)
 // For a robot with no internet, vendor these files into the app instead of loading them from esm.sh.
-import { connect } from "https://esm.sh/gh/jeff-hykin/zenoh-web@63b72dd/client/zenoh_web.ts"
+import { connect } from "https://esm.sh/gh/jeff-hykin/zenoh-gateway@28c17f0/client/zenoh_gateway.ts"
 import { geometry_msgs } from "https://esm.sh/jsr/@dimos/msgs@0.1.4"
 
 const $ = (id) => document.getElementById(id)
@@ -25,10 +25,10 @@ function applyTheme() {
 applyTheme()
 addEventListener("storage", applyTheme)
 
-// ── 1 + 2: topics over zenoh-web ──
+// ── 1 + 2: topics over zenoh-gateway ──
 // dimos's zenoh keys are `dimos/<topic>/<message type>`, and the payload is the LCM encoding of that message.
-const zenoh = await connect(new URL("../../zenoh-web", location.href).href, {
-    // a heartbeat lets the bridge publish our deadman (a zero Twist) if this page dies mid-drive
+const zenoh = await connect(new URL("../../zenoh-gateway", location.href).href, {
+    // a heartbeat lets the gateway publish our deadman (a zero Twist) if this page dies mid-drive
     heartbeatHz: 5,
     heartbeatMisses: 3,
 })

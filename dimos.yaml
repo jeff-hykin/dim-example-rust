@@ -13,7 +13,7 @@ uses:
     "@desktop-gateway":
         - POST /api/notifications # a notification (page + server)
     # it subscribes/publishes topics through Desktop's zenoh bridge: the bridge versions it works with
-    "@zenoh-gateway": ">=0.4 <0.5"
+    "@zenoh-gateway": ">=0.5 <0.6"
     # any other name is another app: its public endpoints (what its provides: lists), relative to /apps/<name>/
     dim-controller:
         - GET api/status
