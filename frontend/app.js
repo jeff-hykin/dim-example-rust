@@ -1,11 +1,12 @@
 // The example page: the same file in all three examples (html, Deno, Rust). Plain ES modules, no build step.
 //
-// Two libraries, both imported by URL (pin the exact versions; dimos.yaml's ranges say which ones this app works with):
-//   - zenoh-gateway's browser client: subscribe/publish dimos topics through Desktop's zenoh-gateway (dimos.yaml `@zenoh-gateway`)
-//   - @dimos/msgs: dimos's LCM message types (decode/encode the bytes a topic carries)
-// For a robot with no internet, vendor these files into the app instead of loading them from esm.sh.
+// Two libraries:
+//   - zenoh-gateway's browser client, by URL (pin the exact version; dimos.yaml `@zenoh-gateway` says which ones this app works with):
+//     subscribe/publish dimos topics through Desktop's zenoh-gateway. For a robot with no internet, vendor it into the app.
+//   - ../../dimos/msgs.js, from the dimos gateway (dimos.yaml `@dimos-gateway: GET /msgs.js`): every dimos message's
+//     decoder/encoder, generated from the dimos that's running, so it always matches it
 import { connect } from "https://esm.sh/gh/jeff-hykin/zenoh-gateway@28c17f0/client/zenoh_gateway.ts"
-import { geometry_msgs } from "https://esm.sh/jsr/@dimos/msgs@0.1.4"
+import { decodeMessage, geometry_msgs } from "../../dimos/msgs.js"
 
 const $ = (id) => document.getElementById(id)
 
@@ -36,11 +37,12 @@ const zenoh = await connect(new URL("../../zenoh-gateway", location.href).href, 
 let odom = null
 function subscribeOdom() {
     odom?.close()
-    const key = `dimos/${$("odomTopic").value.replace(/^\/+/, "")}/geometry_msgs.PoseStamped`
+    const key = geometry_msgs.PoseStamped.zenohKey(`dimos/${$("odomTopic").value.replace(/^\/+/, "")}`)
     let count = 0
     let since = performance.now()
     odom = zenoh.subscribe(key, { delivery: "latest", maxHz: 20 }, (message) => {
-        const pose = geometry_msgs.PoseStamped.decode(message.bytes).pose
+        // the type in the key picks the decoder
+        const pose = decodeMessage(message).pose
         const { x, y, z, w } = pose.orientation
         const yaw = Math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z))
         $("x").textContent = pose.position.x.toFixed(2)
@@ -58,16 +60,13 @@ function subscribeOdom() {
 subscribeOdom()
 $("odomTopic").addEventListener("change", subscribeOdom)
 
-const twist = (forward, turn) =>
-    new geometry_msgs.Twist({
-        linear: new geometry_msgs.Vector3({ x: forward, y: 0, z: 0 }),
-        angular: new geometry_msgs.Vector3({ x: 0, y: 0, z: turn }),
-    }).encode()
+// fields left out are zero
+const twist = (forward, turn) => geometry_msgs.Twist.encode({ linear: { x: forward }, angular: { z: turn } })
 
 let publisher = null
 async function openPublisher() {
     publisher?.close()
-    const key = `dimos/${$("cmdTopic").value.replace(/^\/+/, "")}/geometry_msgs.Twist`
+    const key = geometry_msgs.Twist.zenohKey(`dimos/${$("cmdTopic").value.replace(/^\/+/, "")}`)
     publisher = zenoh.publisher(key, { delivery: "latest" })
     await publisher.setDeadman(twist(0, 0))
 }
@@ -98,7 +97,7 @@ hold($("forward"), 0.3, 0)
 hold($("left"), 0, 0.6)
 hold($("right"), 0, -0.6)
 
-// ── 3: the dimos gateway (dimos.yaml dimos-api: GET /dimos/runs) ──
+// ── 3: the dimos gateway (dimos.yaml @dimos-gateway: GET /runs) ──
 async function json(url, init) {
     const response = await fetch(url, init)
     const body = await response.json().catch(() => null)
@@ -120,7 +119,7 @@ show(
     ),
 )
 
-// ── 4: another app's public endpoint (dimos.yaml dimos-api: GET /apps/dim-controller/api/status) ──
+// ── 4: another app's public endpoint (dimos.yaml dim-controller: GET api/status) ──
 show("other", json("../../apps/dim-controller/api/status"))
 
 // ── 5: Desktop itself ──

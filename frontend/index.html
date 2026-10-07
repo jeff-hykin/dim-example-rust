@@ -4,7 +4,7 @@
     ../../theme.css      Desktop's theme tokens (every skin)          -> /theme.css
     ../../dimos/...      the dimos gateway's API                       -> /dimos/...
     ../../api/...        Desktop's own API                             -> /api/...
-    ../../apps/<other>/  another app's public (agent:) endpoints       -> /apps/<other>/...
+    ../../apps/<other>/  another app's public (provides:) endpoints    -> /apps/<other>/...
     api/...              this app's own server (the Deno/Rust examples) -> /apps/<name>/api/...
   Every one of them is declared in dimos.yaml; Desktop refuses an undeclared call from this page (a 403 + a notification).
 -->
@@ -24,7 +24,7 @@
         <main>
             <section>
                 <h2>1 · Subscribe to a topic and decode it</h2>
-                <p class="muted">zenoh-gateway → <code>dimos/odom/geometry_msgs.PoseStamped</code> → @dimos/msgs</p>
+                <p class="muted">zenoh-gateway → <code>dimos/odom/geometry_msgs.PoseStamped</code> → /dimos/msgs.js</p>
                 <div class="grid">
                     <div><span class="k">x</span><span class="v" id="x">—</span></div>
                     <div><span class="k">y</span><span class="v" id="y">—</span></div>
@@ -51,7 +51,7 @@
             </section>
             <section>
                 <h2>4 · Call another app</h2>
-                <p class="muted"><code>GET /apps/dim-controller/api/status</code> — Controller's public (agent:) endpoint</p>
+                <p class="muted"><code>GET /apps/dim-controller/api/status</code> — Controller's public (provides:) endpoint</p>
                 <pre id="other">…</pre>
             </section>
             <section>

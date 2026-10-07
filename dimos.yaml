@@ -1,25 +1,16 @@
-# dimos.yaml: what this app is, what it needs from Desktop/dimos/other apps, and what it offers.
-# The spec only ever grows (new optional keys); a Desktop ignores keys it doesn't know. See GUIDE.md.
+# the app's contract with Desktop: https://github.com/jeff-hykin/dimos-desktop-mirror/blob/main/docs/create-apps/index.md
 title: Example (Rust)
-# REQUIRED: the dimos.yaml spec version this file follows (v1.x only grows; a breaking change would be v2)
 spec-version: v1.0
-# what this app calls OUTSIDE itself: from its page AND its server, by who serves it.
-# A value is a list of `METHOD path`, a version range, or {version: <range>, endpoints: [...]}.
 uses:
-    # dimos's API (the dimos gateway); paths are relative to /dimos, so this is GET /dimos/runs
     "@dimos-gateway":
-        - GET /runs # what's running (page + server)
-    # Desktop's own API; paths as Desktop serves them (/api/..., /recordings/...)
+        - GET /runs
+        - GET /msgs.js
     "@desktop-gateway":
-        - POST /api/notifications # a notification (page + server)
-    # it subscribes/publishes topics through Desktop's zenoh bridge: the bridge versions it works with
+        - POST /api/notifications
     "@zenoh-gateway": ">=0.5 <0.6"
-    # any other name is another app: its public endpoints (what its provides: lists), relative to /apps/<name>/
     dim-controller:
         - GET api/status
-# what this app offers
 provides:
-    # its PUBLIC API: what the agent (and other apps) may call, described so the agent knows when to
     description: "Example (Rust): a showcase dimOS app; it keeps a list of notes"
     endpoints:
         - method: GET
@@ -33,6 +24,5 @@ provides:
               text:
                   type: string
                   description: the note
-    # what its server answers only its own pages: no definition needed, a last * covers everything below
     private:
         - api/internal/*
