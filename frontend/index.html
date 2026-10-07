@@ -1,0 +1,77 @@
+<!doctype html>
+<!--
+  A dimOS Desktop app page. Desktop serves it at /apps/<name>/, so every URL below is RELATIVE:
+    ../../theme.css      Desktop's theme tokens (every skin)          -> /theme.css
+    ../../dimos/...      the dimos gateway's API                       -> /dimos/...
+    ../../api/...        Desktop's own API                             -> /api/...
+    ../../apps/<other>/  another app's public (agent:) endpoints       -> /apps/<other>/...
+    api/...              this app's own server (the Deno/Rust examples) -> /apps/<name>/api/...
+  Every one of them is declared in dimos.yaml; Desktop refuses an undeclared call from this page (a 403 + a notification).
+-->
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>dimOS example app</title>
+        <link rel="stylesheet" href="../../theme.css" />
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <header>
+            <h1>dimOS example app</h1>
+            <p class="muted" id="shape"></p>
+        </header>
+        <main>
+            <section>
+                <h2>1 · Subscribe to a topic and decode it</h2>
+                <p class="muted">zenoh-web → <code>dimos/odom/geometry_msgs.PoseStamped</code> → @dimos/msgs</p>
+                <div class="grid">
+                    <div><span class="k">x</span><span class="v" id="x">—</span></div>
+                    <div><span class="k">y</span><span class="v" id="y">—</span></div>
+                    <div><span class="k">yaw</span><span class="v" id="yaw">—</span></div>
+                    <div><span class="k">rate</span><span class="v" id="hz">—</span></div>
+                </div>
+                <label>topic <input id="odomTopic" value="odom" /></label>
+            </section>
+            <section>
+                <h2>2 · Publish a topic</h2>
+                <p class="muted">hold a button: a <code>geometry_msgs.Twist</code> at 10 Hz on <code>dimos/&lt;topic&gt;/geometry_msgs.Twist</code>; a zero Twist is armed as the deadman</p>
+                <div class="row">
+                    <button id="forward">▲ forward</button>
+                    <button id="left">⟲ left</button>
+                    <button id="right">⟳ right</button>
+                </div>
+                <label>topic <input id="cmdTopic" value="cmd_vel" /></label>
+                <p class="muted" id="sent"></p>
+            </section>
+            <section>
+                <h2>3 · Call the dimos gateway</h2>
+                <p class="muted"><code>GET /dimos/runs</code> — what's running</p>
+                <pre id="runs">…</pre>
+            </section>
+            <section>
+                <h2>4 · Call another app</h2>
+                <p class="muted"><code>GET /apps/dim-controller/api/status</code> — Controller's public (agent:) endpoint</p>
+                <pre id="other">…</pre>
+            </section>
+            <section>
+                <h2>5 · Talk to Desktop</h2>
+                <div class="row">
+                    <button id="notify">Send a notification</button>
+                    <button id="openLauncher">Open the Launcher</button>
+                </div>
+            </section>
+            <section id="backendSection">
+                <h2>6 · This app's own server</h2>
+                <p class="muted" id="backendNote"></p>
+                <pre id="hello">…</pre>
+                <div class="row">
+                    <input id="noteText" placeholder="a note" />
+                    <button id="addNote">Add note (private endpoint)</button>
+                </div>
+                <ul id="notes"></ul>
+            </section>
+        </main>
+        <script type="module" src="app.js"></script>
+    </body>
+</html>

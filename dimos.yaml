@@ -1,0 +1,30 @@
+# dimos.yaml: what this app is, what it needs from Desktop/dimos/other apps, and what it offers.
+# The spec only ever grows (new optional keys); a Desktop ignores keys it doesn't know. See GUIDE.md.
+title: Example (Rust)
+# REQUIRED: the Desktop app API versions this app works with (2.1 = ignores unknown keys; never a breaking 3)
+dimos-desktop-api: ">=2.1 <3"
+# every endpoint this app calls OUTSIDE itself: from its page AND its server
+dimos-api:
+    - GET /dimos/runs # the dimos gateway: what's running (page + server)
+    - GET /apps/dim-controller/api/status # another app's public (agent:) endpoint
+    - POST /api/notifications # Desktop: a notification (page + server)
+# it subscribes/publishes topics through Desktop's zenoh-web bridge: the bridge versions it works with
+zenoh-web: ">=0.4 <0.5"
+# what its server answers only its own pages: no definition needed, a last * covers everything below
+private:
+    - api/internal/*
+# its PUBLIC API: what the agent (and other apps) may call, described so the agent knows when to
+agent:
+    description: "Example (Rust): a showcase dimOS app; it keeps a list of notes"
+    endpoints:
+        - method: GET
+          path: api/hello
+          description: Who this app is, what dimos is running right now, and how many notes it holds
+          role: context
+        - method: POST
+          path: api/notes
+          description: Add a note to the app's list (the person gets a notification)
+          params:
+              text:
+                  type: string
+                  description: the note

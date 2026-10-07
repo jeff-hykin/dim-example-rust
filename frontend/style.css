@@ -1,0 +1,105 @@
+/* Only Desktop's theme tokens (../../theme.css): the page looks right in every skin, light or dark. */
+:root {
+    color-scheme: light dark;
+}
+body {
+    margin: 0;
+    padding: 16px 16px calc(16px + var(--dim-inset-bottom, 0px));
+    background: var(--bg);
+    color: var(--fg);
+    font: 14px/1.5 var(--sans);
+}
+header,
+main {
+    max-width: 760px;
+    margin: 0 auto;
+}
+h1 {
+    margin: 0;
+    font: 400 20px var(--display, var(--sans));
+    text-transform: var(--label-case, none);
+    letter-spacing: var(--track-label, 0);
+}
+h2 {
+    margin: 0 0 4px;
+    font: 600 14px var(--sans);
+}
+section {
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+.muted {
+    margin: 0 0 8px;
+    color: var(--muted-fg);
+    font-size: 12.5px;
+}
+code,
+pre {
+    font-family: var(--mono);
+}
+pre {
+    margin: 0;
+    max-height: 160px;
+    overflow: auto;
+    padding: 8px;
+    background: var(--input-bg);
+    border: 1px solid var(--hair, var(--border));
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    white-space: pre-wrap;
+}
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.grid > div {
+    display: flex;
+    flex-direction: column;
+    padding: 6px 8px;
+    background: var(--input-bg);
+    border-radius: var(--radius-sm);
+}
+.k {
+    color: var(--muted-fg);
+    font-size: 11px;
+    text-transform: uppercase;
+}
+.v {
+    font: 600 18px var(--mono);
+}
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+button {
+    padding: 8px 14px;
+    background: var(--hover);
+    color: var(--fg);
+    border: 1px solid var(--border-strong, var(--border));
+    border-radius: var(--radius-sm);
+    font: 600 13px var(--sans);
+    cursor: pointer;
+    touch-action: none;
+}
+button:hover {
+    border-color: var(--primary);
+}
+input {
+    padding: 6px 8px;
+    background: var(--input-bg);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font: 13px var(--mono);
+}
+label {
+    color: var(--muted-fg);
+    font-size: 12px;
+}
