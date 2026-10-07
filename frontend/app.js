@@ -138,7 +138,8 @@ $("openLauncher").addEventListener("click", () =>
 
 // ── 6: this app's own server (only the Deno and Rust examples have one, in own_server.js) ──
 // A static app has no server, so its page must not call api/... at all: Desktop would refuse it (nothing in its
-// dimos.yaml offers that path) and post a notification. Loading the module only where it exists keeps one app.js.
+// dimos.yaml offers that path) and post a notification. Loading the module only where it exists keeps one app.js (in
+// the html example the browser console shows that file's 404; that's this check, not a problem).
 import("./own_server.js").then((module) => module.start($, json), () => {
     $("shape").textContent = "this is the plain-HTML example (no server)"
     $("backendSection").hidden = true
