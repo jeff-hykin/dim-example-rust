@@ -2,10 +2,10 @@
 // deno-fmt-ignore-file
 // @ts-nocheck
 /* eslint-disable */
-// zenoh-gateway's browser client (https://github.com/jeff-hykin/zenoh-gateway, client/zenoh_gateway.ts at 28c17f0, the
+// zenoh-gateway's browser client (https://github.com/jeff-hykin/zenoh-gateway, client/zenoh_gateway.ts at 5d4826e, the
 // commit Desktop's gateway is built from), as esm.sh's development bundle: plain JS, no imports, so it loads offline.
 // zenoh.js imports it. Refresh: curl -sL https://esm.sh/gh/jeff-hykin/zenoh-gateway@<commit>/es2022/client/zenoh_gateway.ts.development.bundle.mjs
-/* esm.sh - github:jeff-hykin/zenoh-gateway#28c17f0/client/zenoh_gateway.ts */
+/* esm.sh - github:jeff-hykin/zenoh-gateway#5d4826e/client/zenoh_gateway.ts */
 // node_modules/jeff-hykin/zenoh-gateway/client/vendor/fzstd.ts
 var ab = ArrayBuffer;
 var u8 = Uint8Array;
@@ -882,6 +882,25 @@ var Subscription = class extends Endpoint {
   #bytesSinceAck = 0;
   #ackTimer = null;
   #partials = /* @__PURE__ */ new Map();
+  /**
+   * Changes the running subscription's options in place: same channel and track, no resubscribe; the gateway's
+   * next frame uses them. Reconnects keep them too.
+   */
+  async update(changes) {
+    await this.ready();
+    await this.owner._request({ op: "updateSubscription", subId: this.id, opts: changes }, pingTimeoutMs);
+    const options = { ...this.options };
+    for (const [name, value] of Object.entries(changes)) {
+      if (name === "encodeOptions") {
+        options.encodeOptions = { ...this.options.encodeOptions, ...value };
+      } else if (value === null) {
+        delete options[name];
+      } else {
+        options[name] = value;
+      }
+    }
+    this.options = options;
+  }
   get state() {
     if (this.closed) {
       return "closed";

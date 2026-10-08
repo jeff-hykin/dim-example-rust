@@ -11,7 +11,7 @@
 // gateway generates (GET /msgs.js, `uses: "@dimos-gateway"` in dimos.yaml); `msgDecodeEndpoint` is its URL, relative to
 // the page or absolute, imported once.
 
-import { getZenoh } from "./zenoh.js"
+import { getZenoh, updatedOptions } from "./zenoh.js"
 
 const MISSING_ENDPOINT = 'DimApp needs msgDecodeEndpoint, e.g. "../../dimos/msgs.js" ' +
     '(and declare GET /msgs.js under uses: "@dimos-gateway" in dimos.yaml)'
@@ -78,18 +78,25 @@ export class DimApp {
      * Every message on dimos topic `topic`, decoded: `callback(message, { key, type, receivedAt })`. A type the codec
      * doesn't know arrives as its raw bytes (with a warning, once). `delivery` defaults to "latest" (a stream's newest
      * sample; pass "reliable" for every one). `type` ("<pkg>.<Type>") narrows the key to that type.
-     * @returns {() => void} unsubscribe
+     *
+     * Returns the unsubscribe function, which also has `.unsubscribe()` and `.update(changes)`: changes the running
+     * subscription's gateway options in place (same channel and video track, no resubscribe), e.g.
+     * `await off.update({ maxHz: 30, playoutDelay: [100, 400] })`; `null` puts an option back to its default. The
+     * gateway takes maxHz, minQuality, qualityToHzTradeoff, bandwidthPriority, maxBitrate, minResolutionScale,
+     * maxResolution, playoutDelay and encodeOptions: { quality }, and refuses the rest.
+     * @returns {(() => void) & { unsubscribe(): void, update(changes: object): Promise<void> }}
      */
     subscribe(topic, callback, { type, delivery = "latest", ...options } = {}) {
         const key = `${dimosKey(topic)}/${type ?? "*"}`
         let off = null
         let cancelled = false
+        let subscribeOptions = { delivery, ...options }
         // opened once the codec is in, so the first messages aren't raw bytes
         this.msgsReady.then(() => {
             if (cancelled) {
                 return
             }
-            off = this.zenoh.subscribe(key, { delivery, ...options }, (sample) => {
+            off = this.zenoh.subscribe(key, subscribeOptions, (sample) => {
                 if (sample.kind === "delete") {
                     return
                 }
@@ -98,10 +105,22 @@ export class DimApp {
                 callback(message, { key: sample.key, type: sampleType, receivedAt: Date.now() })
             })
         })
-        return () => {
+        const unsubscribe = () => {
             cancelled = true
             off?.()
         }
+        unsubscribe.unsubscribe = unsubscribe
+        unsubscribe.update = async (changes) => {
+            if (cancelled) {
+                throw new Error(`[dim-app] update on a closed subscription to ${key}`)
+            }
+            if (off) {
+                return await off.update(changes)
+            }
+            // not open yet (the codec is loading): it opens with these
+            subscribeOptions = updatedOptions(subscribeOptions, changes)
+        }
+        return unsubscribe
     }
 
     /** The codec's message type for a name ("geometry_msgs.Twist") or a type object (`app.msgs.geometry_msgs.Twist`). */
