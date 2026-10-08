@@ -12,6 +12,7 @@
 // the page or absolute, imported once.
 
 import { getZenoh, updatedOptions } from "./zenoh.js"
+import { rosCodec, rosTypeName, rosTypeOfSample } from "./ros.js"
 
 const MISSING_ENDPOINT = 'DimApp needs msgDecodeEndpoint, e.g. "../../dimos/msgs.js" ' +
     '(and declare GET /msgs.js under uses: "@dimos-gateway" in dimos.yaml)'
@@ -35,7 +36,7 @@ export class DimApp {
      *   `msgDecodeEndpoint` (required): the codec module's URL; `msgs`: an already-imported codec (skips the import);
      *   the rest goes to getZenoh() (the page's one connection: options only count on its first call)
      */
-    constructor({ msgDecodeEndpoint, msgs, ...zenohOptions } = {}) {
+    constructor({ msgDecodeEndpoint, msgs, rosDistro, ...zenohOptions } = {}) {
         if (!msgDecodeEndpoint && !msgs) {
             throw new Error(MISSING_ENDPOINT)
         }
@@ -44,14 +45,28 @@ export class DimApp {
         this.msgDecodeEndpoint = msgDecodeEndpoint ? new URL(msgDecodeEndpoint, href).href : null
         /** the page's shared zenoh-gateway connection (zenoh.js's AppZenoh; `.client` is the gateway client) */
         this.zenoh = getZenoh(zenohOptions)
+        /** ROS 2 (CDR) messages: `await app.ros.decode("sensor_msgs/msg/Image", bytes)`, `.encode(type, value)` */
+        this.ros = rosCodec({ distro: rosDistro })
         /** resolves to the codec module, or null when it couldn't be imported (subscribers then get raw bytes) */
-        this.msgsReady = (msgs ? Promise.resolve(msgs) : import(this.msgDecodeEndpoint)).then(
+        this.msgsReady = (msgs ? Promise.resolve(msgs) : this.#importMsgs()).then(
             (module) => (this.msgs = module),
             (error) => {
                 console.warn(`[dim-app] couldn't import ${this.msgDecodeEndpoint}; messages stay raw bytes`, error)
                 return null
             },
         )
+    }
+
+    async #importMsgs() {
+        try {
+            return await import(this.msgDecodeEndpoint)
+        } catch (error) {
+            // the endpoint matches the installed dimos exactly; without it, a copy bundled with dim-app decodes most types
+            console.debug(
+                `[dim-app] ${this.msgDecodeEndpoint} didn't load (${error?.message ?? error}); using a built-in copy`,
+            )
+            return await import("./msgs_fallback.js")
+        }
     }
 
     #warnOnce(id, text, error) {
@@ -74,10 +89,21 @@ export class DimApp {
         }
     }
 
+    /** A ROS sample's message (the ROS codec is loaded), else its raw bytes. */
+    #decodeRos(sample, type) {
+        try {
+            return this.ros.sync(type).decode(sample.bytes)
+        } catch (error) {
+            this.#warnOnce(`ros:${type}`, `can't decode ${sample.key} as ${type}; passing raw bytes`, error)
+            return sample.bytes
+        }
+    }
+
     /**
      * Every message on dimos topic `topic`, decoded: `callback(message, { key, type, receivedAt })`. A type the codec
      * doesn't know arrives as its raw bytes (with a warning, once). `delivery` defaults to "latest" (a stream's newest
-     * sample; pass "reliable" for every one). `type` ("<pkg>.<Type>") narrows the key to that type.
+     * sample; pass "reliable" for every one). `type` ("<pkg>.<Type>") narrows the key to that type. `rosType` decodes
+     * every sample as that ROS 2 type (CDR) instead.
      *
      * Returns the unsubscribe function, which also has `.unsubscribe()` and `.update(changes)`: changes the running
      * subscription's gateway options in place (same channel and video track, no resubscribe), e.g.
@@ -86,24 +112,85 @@ export class DimApp {
      * maxResolution, playoutDelay and encodeOptions: { quality }, and refuses the rest.
      * @returns {(() => void) & { unsubscribe(): void, update(changes: object): Promise<void> }}
      */
-    subscribe(topic, callback, { type, delivery = "latest", ...options } = {}) {
-        const key = `${dimosKey(topic)}/${type ?? "*"}`
+    subscribe(topic, callback, { type, ...options } = {}) {
+        return this.subscribeKey(`${dimosKey(topic)}/${type ?? "*"}`, callback, options)
+    }
+
+    /**
+     * subscribe() for any zenoh key expression, e.g. ROS 2 topics: rmw_zenoh's `0/chatter/**` (its keys name the
+     * type: `<domain>/<topic>/<pkg>::msg::dds_::<Type>_/<hash>`), or zenoh-bridge-ros2dds's `chatter` with
+     * `{ rosType: "std_msgs/msg/String" }` (its keys don't). A sample whose key or encoding names a ROS type is
+     * decoded as CDR (the ROS codec loads on the first one); any other by the dimos codec. `info.type` is
+     * "pkg/msg/Type" for ROS, "<pkg>.<Type>" for dimos.
+     */
+    subscribeKey(key, callback, { rosType, delivery = "latest", ...options } = {}) {
+        const fixedRosType = rosType === undefined ? null : rosTypeName(rosType)
+        if (rosType !== undefined && !fixedRosType) {
+            throw new Error(
+                `[dim-app] rosType ${JSON.stringify(rosType)} isn't a ROS type (e.g. "std_msgs/msg/String")`,
+            )
+        }
         let off = null
         let cancelled = false
         let subscribeOptions = { delivery, ...options }
+        /** ROS samples that came while the ROS codec loads, delivered in order once it's in */
+        let rosBacklog = null
+        /** the ROS codec failed to load: ROS samples come raw from then on (no import per sample) */
+        let rosFailed = false
+        const deliver = (sample, decoded, type) => {
+            if (!cancelled) {
+                callback(decoded, { key: sample.key, type, receivedAt: sample.receivedAt })
+            }
+        }
+        const onSample = (sample) => {
+            if (sample.kind === "delete") {
+                return
+            }
+            const receivedAt = Date.now()
+            const rosSampleType = fixedRosType ?? rosTypeOfSample(sample.key, sample.encoding)
+            if (!rosSampleType) {
+                const sampleType = this.msgs?.typeOfChannel(sample.key) ?? null
+                callback(this.#decode(sample, sampleType), { key: sample.key, type: sampleType, receivedAt })
+                return
+            }
+            const queued = { key: sample.key, bytes: sample.bytes, receivedAt }
+            if (rosFailed) {
+                deliver(queued, queued.bytes, rosSampleType)
+                return
+            }
+            if (this.ros.loaded && !rosBacklog) {
+                deliver(queued, this.#decodeRos(queued, rosSampleType), rosSampleType)
+                return
+            }
+            if (!rosBacklog) {
+                rosBacklog = []
+                this.ros.load().then(
+                    () => {
+                        const backlog = rosBacklog
+                        rosBacklog = null
+                        for (const [item, itemType] of backlog) {
+                            deliver(item, this.#decodeRos(item, itemType), itemType)
+                        }
+                    },
+                    (error) => {
+                        const backlog = rosBacklog
+                        rosBacklog = null
+                        rosFailed = true
+                        this.#warnOnce("ros:load", "couldn't load the ROS codec; ROS messages stay raw bytes", error)
+                        for (const [item, itemType] of backlog) {
+                            deliver(item, item.bytes, itemType)
+                        }
+                    },
+                )
+            }
+            rosBacklog.push([queued, rosSampleType])
+        }
         // opened once the codec is in, so the first messages aren't raw bytes
         this.msgsReady.then(() => {
             if (cancelled) {
                 return
             }
-            off = this.zenoh.subscribe(key, subscribeOptions, (sample) => {
-                if (sample.kind === "delete") {
-                    return
-                }
-                const sampleType = this.msgs?.typeOfChannel(sample.key) ?? null
-                const message = this.#decode(sample, sampleType)
-                callback(message, { key: sample.key, type: sampleType, receivedAt: Date.now() })
-            })
+            off = this.zenoh.subscribe(key, subscribeOptions, (sample) => onSample(sample))
         })
         const unsubscribe = () => {
             cancelled = true
