@@ -51,24 +51,34 @@
                 <p class="muted" id="sent"></p>
             </section>
             <section>
-                <h2>3 · Call the dimos gateway</h2>
+                <h2>3 · A camera in a &lt;video&gt;</h2>
+                <p class="muted">zenoh-gateway turns <code>dimos/&lt;topic&gt;/sensor_msgs.Image</code> into an H.264 track (its <code>dimos_lcm_image</code> encoding); a plain <code>&lt;video&gt;</code> plays it, and a canvas grabs a frame</p>
+                <video id="camera" autoplay muted playsinline></video>
+                <div class="row">
+                    <button id="snapshot">Snapshot</button>
+                </div>
+                <img id="still" alt="the last snapshot" hidden />
+                <label>topic <input id="cameraTopic" value="color_image" /></label>
+            </section>
+            <section>
+                <h2>4 · Call the dimos gateway</h2>
                 <p class="muted"><code>GET /dimos/runs</code> — what's running</p>
                 <pre id="runs">…</pre>
             </section>
             <section>
-                <h2>4 · Call another app</h2>
+                <h2>5 · Call another app</h2>
                 <p class="muted"><code>GET /apps/dim-controller/api/status</code> — Controller's public (provides:) endpoint</p>
                 <pre id="other">…</pre>
             </section>
             <section>
-                <h2>5 · Talk to Desktop</h2>
+                <h2>6 · Talk to Desktop</h2>
                 <div class="row">
                     <button id="notify">Send a notification</button>
-                    <button id="openLauncher">Open the Launcher</button>
+                    <button id="openLauncher">Open the Launcher (blueprints with cmd_vel)</button>
                 </div>
             </section>
             <section id="backendSection">
-                <h2>6 · This app's own server</h2>
+                <h2>7 · This app's own server</h2>
                 <p class="muted" id="backendNote"></p>
                 <pre id="hello">…</pre>
                 <div class="row">

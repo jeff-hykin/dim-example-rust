@@ -4,6 +4,7 @@
 // It holds the page's connection to Desktop's zenoh-gateway and the codec ../../dimos/msgs.js from the dimos gateway (dimos.yaml `@dimos-gateway: GET /msgs.js`): every dimos message's
 // decoder/encoder, generated from the dimos that's running, so it always matches it.
 import { DimApp } from "./dim-app/source/dim_app.js"
+import { openApp } from "./dim-app/source/desktop.js"
 
 const $ = (id) => document.getElementById(id)
 
@@ -98,7 +99,34 @@ hold($("forward"), 0.3, 0)
 hold($("left"), 0, 0.6)
 hold($("right"), 0, -0.6)
 
-// ── 3: the dimos gateway (dimos.yaml @dimos-gateway: GET /runs) ──
+// ── 3: a camera in a <video>: the gateway encodes sensor_msgs.Image as an H.264 track (dimos_lcm_image) ──
+let unsubscribeCamera = null
+function subscribeCamera() {
+    unsubscribeCamera?.()
+    const key = `dimos/${$("cameraTopic").value}/sensor_msgs.Image`
+    const options = { delivery: "latest", maxHz: 30, encoding: "dimos_lcm_image" }
+    unsubscribeCamera = app.zenoh.subscribe(key, options, ({ mediaStream }) => {
+        if (mediaStream && $("camera").srcObject !== mediaStream) {
+            $("camera").srcObject = mediaStream
+        }
+    })
+}
+subscribeCamera()
+$("cameraTopic").addEventListener("change", subscribeCamera)
+
+// a snapshot: draw the playing frame on a canvas, keep it as a PNG
+$("snapshot").addEventListener("click", () => {
+    const video = $("camera")
+    if (!video.videoWidth) {
+        return
+    }
+    const canvas = Object.assign(document.createElement("canvas"), { width: video.videoWidth, height: video.videoHeight })
+    canvas.getContext("2d").drawImage(video, 0, 0)
+    $("still").src = canvas.toDataURL("image/png")
+    $("still").hidden = false
+})
+
+// ── 4: the dimos gateway (dimos.yaml @dimos-gateway: GET /runs) ──
 async function json(url, init) {
     const response = await fetch(url, init)
     const body = await response.json().catch(() => null)
@@ -120,10 +148,10 @@ show(
     ),
 )
 
-// ── 4: another app's public endpoint (dimos.yaml dim-controller: GET api/status) ──
+// ── 5: another app's public endpoint (dimos.yaml dim-controller: GET api/status) ──
 show("other", json("../../apps/dim-controller/api/status"))
 
-// ── 5: Desktop itself ──
+// ── 6: Desktop itself ──
 $("notify").addEventListener("click", () =>
     json("../../api/notifications", {
         method: "POST",
@@ -131,12 +159,10 @@ $("notify").addEventListener("click", () =>
         body: JSON.stringify({ title: "Hello from the example app", body: "POST /api/notifications", kind: "ok" }),
     })
 )
-// opening another app (or a built-in: launcher, appstore, settings) is a message to the shell around this page
-$("openLauncher").addEventListener("click", () =>
-    parent.postMessage({ dimosShell: 1, type: "open_app", app: "launcher" }, location.origin)
-)
+// another app (or a built-in: launcher, appstore, settings); the Launcher takes its filters (query, robot, stream)
+$("openLauncher").addEventListener("click", () => openApp("launcher", { stream: "cmd_vel" }))
 
-// ── 6: this app's own server (only the Deno and Rust examples have one, in own_server.js) ──
+// ── 7: this app's own server (only the Deno and Rust examples have one, in own_server.js) ──
 // A static app has no server, so its page must not call api/... at all: Desktop would refuse it (nothing in its
 // dimos.yaml offers that path) and post a notification. Loading the module only where it exists keeps one app.js (in
 // the html example the browser console shows that file's 404; that's this check, not a problem).

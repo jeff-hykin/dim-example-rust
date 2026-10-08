@@ -102,6 +102,16 @@ input {
     border-radius: var(--radius-sm);
     font: 13px var(--mono);
 }
+video,
+#still {
+    display: block;
+    width: 100%;
+    max-height: 360px;
+    margin-bottom: 8px;
+    background: var(--input-bg);
+    border-radius: var(--radius-sm);
+    object-fit: contain;
+}
 label {
     color: var(--muted-fg);
     font-size: 12px;

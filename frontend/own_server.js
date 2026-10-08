@@ -1,4 +1,4 @@
-// Section 6 of the example page: this app's own server (the Deno and Rust examples ship this file; the html one doesn't).
+// Section 7 of the example page: this app's own server (the Deno and Rust examples ship this file; the html one doesn't).
 // Its endpoints are relative to the page (`api/...` -> /apps/<name>/api/...) and declared in dimos.yaml:
 //   GET api/hello          public: listed under `provides:`, so the agent and other apps may call it too
 //   api/internal/*         private: listed under `private:`, only this app's own pages may call it
