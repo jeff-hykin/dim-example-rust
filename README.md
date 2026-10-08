@@ -158,7 +158,7 @@ unsubscribeCamera = app.zenoh.subscribe(key, options, ({ mediaStream }) => {
 ```
 
 Refresh the vendored copy:
-`deno run -A https://raw.githubusercontent.com/jeff-hykin/dim-app/v0.20.1/tools/vendor.js frontend/dim-app`.
+`deno run -A https://raw.githubusercontent.com/jeff-hykin/dim-app/v0.20.4/tools/vendor.js frontend/dim-app`.
 Each page snippet, with screenshots, is in the [html example's README](https://github.com/jeff-hykin/dim-example-html).
 
 ## Develop
