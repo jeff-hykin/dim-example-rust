@@ -58,6 +58,8 @@ $("odomTopic").addEventListener("change", subscribeOdom)
 // fields left out are zero
 const twist = (forward, turn) => ({ linear: { x: forward }, angular: { z: turn } })
 
+// Nothing goes out until a button is pressed: the publisher stays silent until its first put(), and its deadman
+// (a zero Twist the gateway sends if this page goes away) is armed by a drive and disarmed by the stop.
 let publisher = null
 async function openPublisher() {
     const next = await app.publisher($("cmdTopic").value, "geometry_msgs.Twist", { delivery: "latest" })
@@ -79,9 +81,13 @@ function hold(button, forward, turn) {
         }, 100)
     }
     const stop = () => {
+        // only a press ends in a stop (pointerleave also fires on a plain hover)
+        if (!driving) {
+            return
+        }
         clearInterval(driving)
         driving = null
-        publisher?.put(twist(0, 0))
+        publisher?.stop()
     }
     button.addEventListener("pointerdown", start)
     for (const event of ["pointerup", "pointerleave", "pointercancel"]) {

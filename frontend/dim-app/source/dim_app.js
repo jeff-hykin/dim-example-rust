@@ -127,23 +127,106 @@ export class DimApp {
     }
 
     /**
-     * A publisher for dimos topic `topic` of `type`: `put(value)` encodes and sends on its own channel;
-     * `setDeadman(value)` has the gateway publish `value` if this page goes away (needs getZenoh's connectOptions
-     * `{ heartbeatHz }`); `close()`. Options go to the gateway client's publisher ({ delivery, priority, repeatMs }).
+     * A publisher for dimos topic `topic` of `type`. Silent until the first `put(value)`: the gateway channel opens then,
+     * so an app that only opens a publisher sends nothing. `setDeadman(value)` stores a stop value (e.g. a zero Twist)
+     * that the gateway publishes if this page goes away (needs getZenoh's connectOptions `{ heartbeatHz }`), but it is
+     * only armed by a put of something else (a drive) and disarmed by a put of the stop value itself or `stop()`, so an
+     * idle page never has a deadman to fire. `stop(value?)` puts the stop value and disarms; `close()`.
+     * Options go to the gateway client's publisher ({ delivery, priority, repeatMs }).
      */
     async publisher(topic, type, options = {}) {
         const msgType = await this.#type(type)
         await this.zenoh.ready
-        const publisher = this.zenoh.client.publisher(msgType.zenohKey(dimosKey(topic)), options)
+        const zenoh = this.zenoh
+        const key = msgType.zenohKey(dimosKey(topic))
+        /** listener → its unsubscribe from the gateway publisher (once that exists) */
+        const tripListeners = new Map()
+        let raw = null
+        let closed = false
+        /** the encoded stop value, null = no deadman */
+        let deadman = null
+        /** what the gateway was last told: armed or not (requests go in order over the control channel) */
+        let armed = false
+        const sameBytes = (a, b) => a.length === b.length && a.every((byte, index) => byte === b[index])
+        const ensureRaw = () => {
+            if (closed) {
+                throw new Error(`[dim-app] publisher ${key} is closed`)
+            }
+            if (!raw) {
+                raw = zenoh.client.publisher(key, options)
+                for (const listener of tripListeners.keys()) {
+                    tripListeners.set(listener, raw.onTripped?.(listener))
+                }
+            }
+            return raw
+        }
+        const setArmed = (want) => {
+            if (want === armed || !raw) {
+                return Promise.resolve()
+            }
+            armed = want
+            const request = want ? raw.setDeadman(deadman) : raw.clearDeadman()
+            return Promise.resolve(request).catch((error) => {
+                armed = false
+                console.warn(`[dim-app] ${key}: ${want ? "arming" : "disarming"} the deadman failed:`, error)
+            })
+        }
+        const put = (value) => {
+            const bytes = msgType.encode(value)
+            const publisher = ensureRaw()
+            publisher.put(bytes)
+            if (deadman) {
+                // a drive arms the deadman; the stop value itself (sent, so the robot stops) disarms it
+                setArmed(!sameBytes(bytes, deadman))
+            }
+        }
         return {
-            key: publisher.key,
+            key,
             type: msgType.name,
-            raw: publisher,
-            put: (value) => publisher.put(msgType.encode(value)),
-            setDeadman: (value) => publisher.setDeadman(msgType.encode(value)),
-            clearDeadman: () => publisher.clearDeadman(),
-            onTripped: (listener) => publisher.onTripped(listener),
-            close: () => publisher.close(),
+            get raw() {
+                return raw
+            },
+            get armed() {
+                return armed
+            },
+            put,
+            stop(value) {
+                if (value === undefined && !deadman) {
+                    throw new Error(`[dim-app] ${key}: stop() needs a value or a setDeadman() first`)
+                }
+                ensureRaw().put(value === undefined ? deadman : msgType.encode(value))
+                return setArmed(false)
+            },
+            setDeadman(value) {
+                if (!zenoh.client.options?.heartbeatHz) {
+                    throw new Error(
+                        "[dim-app] setDeadman needs a heartbeat: getZenoh connectOptions { heartbeatHz: 5 }",
+                    )
+                }
+                deadman = msgType.encode(value)
+                // already driving: re-arm with the new value; otherwise the next drive put arms it
+                if (armed) {
+                    armed = false
+                    return setArmed(true)
+                }
+                return Promise.resolve()
+            },
+            clearDeadman() {
+                const done = setArmed(false)
+                deadman = null
+                return done
+            },
+            onTripped(listener) {
+                tripListeners.set(listener, raw?.onTripped?.(listener))
+                return () => {
+                    tripListeners.get(listener)?.()
+                    tripListeners.delete(listener)
+                }
+            },
+            close() {
+                closed = true
+                raw?.close()
+            },
         }
     }
 }
