@@ -1,93 +1,33 @@
 <!doctype html>
 <!--
-  A dimOS Desktop app page. Desktop serves it at /apps/<name>/, so every URL below is RELATIVE:
-    ../../theme.css      Desktop's theme tokens (every skin)          -> /theme.css
+  A dimOS Desktop app page. Desktop serves it at /apps/<name>/ (from the Rust server, server/main.rs), so every URL below is RELATIVE:
     ../../dimos/...      the dimos gateway's API                       -> /dimos/...
     ../../api/...        Desktop's own API                             -> /api/...
     ../../apps/<other>/  another app's public (provides:) endpoints    -> /apps/<other>/...
     api/...              this app's own server (the Deno/Rust examples) -> /apps/<name>/api/...
   Every one of them is declared in dimos.yaml; Desktop refuses an undeclared call from this page (a 403 + a notification).
+  So is everything it does on zenoh (dimos.yaml `zenoh:`, spec v1.2): the subscriptions and the cmd_vel publisher below.
 -->
 <html lang="en">
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>dimOS example app</title>
-        <!-- inside Desktop, its window bar already names the app, so the page's own heading only shows on its own -->
-        <script>
-            if (parent !== window) {
-                document.documentElement.dataset.inDesktop = ""
+        <!-- No build: the libraries come from esm.sh by URL (pinned tags), and React is shared through this import map. -->
+        <script type="importmap">
+            {
+                "imports": {
+                    "react": "https://esm.sh/react@19.2.0",
+                    "react/": "https://esm.sh/react@19.2.0/",
+                    "react-dom": "https://esm.sh/react-dom@19.2.0",
+                    "react-dom/": "https://esm.sh/react-dom@19.2.0/",
+                    "dimos-react": "https://esm.sh/gh/jeff-hykin/dimos-react@v0.1.4/mod.js?external=react,react-dom"
+                }
             }
         </script>
-        <link rel="stylesheet" href="../../theme.css" />
-        <link rel="stylesheet" href="style.css" />
     </head>
     <body>
-        <header>
-            <h1>dimOS example app</h1>
-            <p class="muted" id="shape"></p>
-        </header>
-        <main>
-            <section>
-                <h2>1 · Subscribe to a topic and decode it</h2>
-                <p class="muted">zenoh-gateway → <code>dimos/odom/geometry_msgs.PoseStamped</code> → /dimos/msgs.js</p>
-                <div class="grid">
-                    <div><span class="k">x</span><span class="v" id="x">—</span></div>
-                    <div><span class="k">y</span><span class="v" id="y">—</span></div>
-                    <div><span class="k">yaw</span><span class="v" id="yaw">—</span></div>
-                    <div><span class="k">rate</span><span class="v" id="hz">—</span></div>
-                </div>
-                <label>topic <input id="odomTopic" value="odom" /></label>
-            </section>
-            <section>
-                <h2>2 · Publish a topic</h2>
-                <p class="muted">hold a button: a <code>geometry_msgs.Twist</code> at 10 Hz on <code>dimos/&lt;topic&gt;/geometry_msgs.Twist</code>; nothing is sent until you press; while you drive a zero Twist is armed as the deadman, and the release sends it and disarms</p>
-                <div class="row">
-                    <button id="forward">▲ forward</button>
-                    <button id="left">⟲ left</button>
-                    <button id="right">⟳ right</button>
-                </div>
-                <label>topic <input id="cmdTopic" value="cmd_vel" /></label>
-                <p class="muted" id="sent"></p>
-            </section>
-            <section>
-                <h2>3 · A camera in a &lt;video&gt;</h2>
-                <p class="muted">zenoh-gateway turns <code>dimos/&lt;topic&gt;/sensor_msgs.Image</code> into an H.264 track (its <code>dimos_lcm_image</code> encoding); a plain <code>&lt;video&gt;</code> plays it, and a canvas grabs a frame</p>
-                <video id="camera" autoplay muted playsinline></video>
-                <div class="row">
-                    <button id="snapshot">Snapshot</button>
-                </div>
-                <img id="still" alt="the last snapshot" hidden />
-                <label>topic <input id="cameraTopic" value="color_image" /></label>
-            </section>
-            <section>
-                <h2>4 · Call the dimos gateway</h2>
-                <p class="muted"><code>GET /dimos/runs</code> — what's running</p>
-                <pre id="runs">…</pre>
-            </section>
-            <section>
-                <h2>5 · Call another app</h2>
-                <p class="muted"><code>GET /apps/dim-controller/api/status</code> — Controller's public (provides:) endpoint</p>
-                <pre id="other">…</pre>
-            </section>
-            <section>
-                <h2>6 · Talk to Desktop</h2>
-                <div class="row">
-                    <button id="notify">Send a notification</button>
-                    <button id="openLauncher">Open the Launcher (blueprints with cmd_vel)</button>
-                </div>
-            </section>
-            <section id="backendSection">
-                <h2>7 · This app's own server</h2>
-                <p class="muted" id="backendNote"></p>
-                <pre id="hello">…</pre>
-                <div class="row">
-                    <input id="noteText" placeholder="a note" />
-                    <button id="addNote">Add note (private endpoint)</button>
-                </div>
-                <ul id="notes"></ul>
-            </section>
-        </main>
+        <div id="root"></div>
         <script type="module" src="app.js"></script>
     </body>
 </html>

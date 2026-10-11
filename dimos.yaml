@@ -1,15 +1,30 @@
 # the app's contract with Desktop: https://github.com/jeff-hykin/dimos-desktop-mirror/blob/main/docs/create-apps/index.md
 title: Example (Rust)
-spec-version: v1.0
+spec-version: v1.2
 uses:
     "@dimos-gateway":
         - GET /runs
         - GET /msgs.js
+        - GET /skills
+        - POST /skills/call
     "@desktop-gateway":
         - POST /api/notifications
     "@zenoh-gateway": ">=0.5 <0.6"
     dim-controller:
         - GET api/status
+# spec v1.2: what the page may do on zenoh, as zenoh's ACL config (the topic boxes take any topic of these types)
+zenoh:
+    default_permission: deny
+    read:
+        - id: odom-and-camera
+          messages: [declare_subscriber, put] # subscribe, and receive its samples
+          key_exprs: ["dimos/**/geometry_msgs.PoseStamped", "dimos/**/sensor_msgs.Image"]
+          permission: allow
+    write:
+        - id: drive
+          messages: [put] # the cmd_vel publisher (and its deadman)
+          key_exprs: ["dimos/**/geometry_msgs.Twist"]
+          permission: allow
 provides:
     description: "Example (Rust): a showcase dimOS app; it keeps a list of notes"
     endpoints:

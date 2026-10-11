@@ -10,8 +10,9 @@ dimos-desktop install github.com/jeff-hykin/dim-example-rust
 
 A [dimOS Desktop](https://github.com/jeff-hykin/dimos-desktop-mirror) app with a Rust server (axum): pick it for
 Bluetooth scans, UART ports, heavy video processing. Its page is the
-[html example's](https://github.com/jeff-hykin/dim-example-html) page (topics, a camera `<video>`, drive, notifications),
-with dim-app vendored instead of loaded by URL. Below: the server side. How apps work:
+[html example's](https://github.com/jeff-hykin/dim-example-html) page (topics, a camera, drive, notifications, skills)
+plus a section for this server: its whole UI is [dimos-react](https://github.com/jeff-hykin/dimos-react), loaded by an
+esm.sh import map (no build), with dim-app vendored instead of loaded by URL. Below: the server side. How apps work:
 **[Making a dimOS app](https://github.com/jeff-hykin/dimos-desktop-mirror/blob/main/docs/create-apps/index.md)**.
 
 ![the whole example page inside Desktop](docs/images/page.png)
@@ -135,31 +136,68 @@ The checkout is replaced on update; `dataDir` isn't.
 notes_file: PathBuf::from(data_dir).join("notes.json"),
 ```
 
-## On the page: decoded topics and a camera, vendored
+## On the page: dimos-react, no build
 
-The page imports the vendored SDK (no network on a robot):
+`frontend/index.html` maps React and dimos-react to esm.sh (pinned tags, one React shared):
+
+```html
+<script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@19.2.0",
+            "react/": "https://esm.sh/react@19.2.0/",
+            "react-dom": "https://esm.sh/react-dom@19.2.0",
+            "react-dom/": "https://esm.sh/react-dom@19.2.0/",
+            "dimos-react": "https://esm.sh/gh/jeff-hykin/dimos-react@v0.1.4/mod.js?external=react,react-dom"
+        }
+    }
+</script>
+```
+
+and `app.js` builds the page from its components (`AppProvider` follows Desktop's skin live), with the vendored SDK for
+decoded topics and the camera (no network for the SDK on a robot):
 
 ```js
+import { AppProvider, Button, Card, h, MediaFrame, Stat } from "dimos-react"
 import { DimApp } from "./dim-app/source/dim_app.js"
-import { openApp } from "./dim-app/source/desktop.js"
 
 const app = new DimApp({
     msgDecodeEndpoint: "../../dimos/msgs.js",
     connectOptions: { heartbeatHz: 5, heartbeatMisses: 3 },
 })
 
-const key = `dimos/${$("cameraTopic").value}/sensor_msgs.Image`
-const options = { delivery: "latest", maxHz: 30, encoding: "dimos_lcm_image" }
-unsubscribeCamera = app.zenoh.subscribe(key, options, ({ mediaStream }) => {
-    if (mediaStream && $("camera").srcObject !== mediaStream) {
-        $("camera").srcObject = mediaStream
-    }
-})
+// the camera: the gateway's H.264 track, played by MediaFrame
+useEffect(() => {
+    const options = { delivery: "latest", maxHz: 30, encoding: "dimos_lcm_image" }
+    return app.zenoh.subscribe(`dimos/${topic}/sensor_msgs.Image`, options, ({ mediaStream }) => {
+        if (mediaStream) {
+            setStream(mediaStream)
+        }
+    })
+}, [topic])
+h(MediaFrame, { stream, ref: video, placeholder: `waiting for /${topic}` })
 ```
 
-Refresh the vendored copy:
+What the page may do on zenoh is declared in `dimos.yaml` (spec v1.2, zenoh's ACL shape; deny by default):
+
+```yaml
+zenoh:
+    default_permission: deny
+    read:
+        - id: odom-and-camera
+          messages: [declare_subscriber, put] # subscribe, and receive its samples
+          key_exprs: ["dimos/**/geometry_msgs.PoseStamped", "dimos/**/sensor_msgs.Image"]
+          permission: allow
+    write:
+        - id: drive
+          messages: [put] # the cmd_vel publisher (and its deadman)
+          key_exprs: ["dimos/**/geometry_msgs.Twist"]
+          permission: allow
+```
+
+Refresh the vendored SDK:
 `deno run -A https://raw.githubusercontent.com/jeff-hykin/dim-app/v0.20.4/tools/vendor.js frontend/dim-app`.
-Each page snippet, with screenshots, is in the [html example's README](https://github.com/jeff-hykin/dim-example-html).
+Each page snippet is in the [html example's README](https://github.com/jeff-hykin/dim-example-html).
 
 ## Develop
 
@@ -174,6 +212,6 @@ dimos-desktop app check .  # dimos.yaml declares everything it calls
 - `dimos.yaml`: the contract with Desktop (what it calls, what it offers)
 - `flake.nix`: `nix build .#dimosApp`
 - `server/main.rs`: the server
-- `frontend/`: the page (`index.html`, `app.js`, `style.css`), `own_server.js` for its server's endpoints, `dim-app/`
+- `frontend/`: the page (`index.html`, `app.js`), `own_server.js` (section 8: its server's endpoints), `dim-app/`
   (the vendored SDK)
 - `icon.svg`: its icon
