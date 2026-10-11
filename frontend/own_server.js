@@ -2,8 +2,8 @@
 // (`api/...` -> /apps/<name>/api/...) and declared in dimos.yaml:
 //   GET api/hello          public: listed under `provides:`, so the agent and other apps may call it too
 //   api/internal/*         private: listed under `private:`, only this app's own pages may call it
-import { useEffect, useState } from "react"
-import { Button, Card, CodeBlock, Column, h, List, ListRow, Row, Text, TextInput, useToast } from "dimos-react"
+import { createElement as h, useEffect, useState } from "react"
+import { Button, Card, CodeBlock, Column, List, ListRow, Row, Text, TextInput, useToast } from "dimos-react"
 
 async function json(url, init) {
     const response = await fetch(url, init)

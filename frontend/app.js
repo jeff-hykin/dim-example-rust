@@ -5,7 +5,7 @@
 //     from the dimos gateway (dimos.yaml `@dimos-gateway: GET /msgs.js`), generated from the dimos that's
 //     running, so it always matches it. dimos-react's hooks share that one connection.
 import { createRoot } from "react-dom/client"
-import { useEffect, useRef, useState } from "react"
+import { createElement as h, useEffect, useRef, useState } from "react"
 import {
     AppProvider,
     Button,
@@ -22,7 +22,6 @@ import {
     Stat,
     Text,
     TextInput,
-    h,
     useToast,
 } from "dimos-react"
 import { DimApp } from "./dim-app/source/dim_app.js"

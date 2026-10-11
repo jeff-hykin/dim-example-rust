@@ -148,7 +148,7 @@ notes_file: PathBuf::from(data_dir).join("notes.json"),
             "react/": "https://esm.sh/react@19.2.0/",
             "react-dom": "https://esm.sh/react-dom@19.2.0",
             "react-dom/": "https://esm.sh/react-dom@19.2.0/",
-            "dimos-react": "https://esm.sh/gh/jeff-hykin/dimos-react@v0.1.4/mod.js?external=react,react-dom"
+            "dimos-react": "https://esm.sh/gh/jeff-hykin/dimos-react@v0.2.0-beta1/src/index.ts?external=react,react-dom,three"
         }
     }
 </script>
@@ -158,7 +158,8 @@ and `app.js` builds the page from its components (`AppProvider` follows Desktop'
 decoded topics and the camera (no network for the SDK on a robot):
 
 ```js
-import { AppProvider, Button, Card, h, MediaFrame, Stat } from "dimos-react"
+import { createElement as h } from "react"
+import { AppProvider, Button, Card, MediaFrame, Stat } from "dimos-react"
 import { DimApp } from "./dim-app/source/dim_app.js"
 
 const app = new DimApp({
