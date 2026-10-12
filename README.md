@@ -148,7 +148,7 @@ notes_file: PathBuf::from(data_dir).join("notes.json"),
             "react/": "https://esm.sh/react@19.2.0/",
             "react-dom": "https://esm.sh/react-dom@19.2.0",
             "react-dom/": "https://esm.sh/react-dom@19.2.0/",
-            "dimos-react": "https://esm.sh/gh/jeff-hykin/dimos-react@v0.2.0-beta3/src/index.ts?external=react,react-dom,three"
+            "dimos-react": "https://esm.sh/gh/jeff-hykin/dimos-react@v0.2.0-beta5/src/index.ts?external=react,react-dom,three"
         }
     }
 </script>
