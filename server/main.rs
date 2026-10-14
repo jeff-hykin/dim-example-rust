@@ -75,7 +75,7 @@ async fn desktop(app: &Arc<App>, method: &'static str, path: &'static str, body:
 }
 
 async fn hello(State(app): State<Arc<App>>) -> Json<Value> {
-    let launch = desktop(&app, "GET", "/dimos/runs", None).await.and_then(|runs| runs.get("launch").cloned());
+    let launch = desktop(&app, "GET", "/dimos-gateway/runs", None).await.and_then(|runs| runs.get("launch").cloned());
     let running = launch
         .filter(|l| !l.is_null())
         .map(|l| format!("{} ({})", l["blueprint"].as_str().unwrap_or("?"), l["phase"].as_str().unwrap_or("?")));

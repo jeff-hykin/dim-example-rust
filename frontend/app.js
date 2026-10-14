@@ -1,7 +1,7 @@
 // The example page: the html example's page plus section 8, this app's own server (own_server.js). Plain ES modules,
 // no build step. Two libraries:
 //   dimos-react: the whole UI (Desktop's theme followed live, cards, buttons, inputs, video, toasts)
-//   dim-app's DimApp (vendored into ./dim-app with dim-app's tools/vendor.js): the page's connection to Desktop's zenoh-gateway, plus the codec ../../dimos/msgs.js
+//   dim-app's DimApp (vendored into ./dim-app with dim-app's tools/vendor.js): the page's connection to Desktop's zenoh-gateway, plus the codec ../../dimos-gateway/msgs.js
 //     from the dimos gateway (dimos.yaml `@dimos-gateway: GET /msgs.js`), generated from the dimos that's
 //     running, so it always matches it. dimos-react's hooks share that one connection.
 import { createRoot } from "react-dom/client"
@@ -30,7 +30,7 @@ import { OwnServer } from "./own_server.js"
 
 // dimos's zenoh keys are `dimos/<topic>/<message type>`; DimApp decodes and encodes them with msgs.js.
 const app = new DimApp({
-    msgDecodeEndpoint: "../../dimos/msgs.js",
+    msgDecodeEndpoint: "../../dimos-gateway/msgs.js",
     // a heartbeat lets the gateway publish our deadman (a zero Twist) if this page dies mid-drive
     connectOptions: { heartbeatHz: 5, heartbeatMisses: 3 },
 })
@@ -97,7 +97,7 @@ function Odom() {
     }, [topic])
     return h(
         Section,
-        { title: "1 · Subscribe to a topic and decode it", note: `zenoh-gateway → \`dimos/${topic}/geometry_msgs.PoseStamped\` → /dimos/msgs.js` },
+        { title: "1 · Subscribe to a topic and decode it", note: `zenoh-gateway → \`dimos/${topic}/geometry_msgs.PoseStamped\` → /dimos-gateway/msgs.js` },
         h(
             Row,
             { gap: 28, wrap: true },
@@ -208,9 +208,9 @@ function Camera() {
 // ── 4: the dimos gateway (dimos.yaml @dimos-gateway: GET /runs) ──
 function Gateway() {
     const runs = useLoad(() =>
-        json("../../dimos/runs").then(({ launch }) => launch ? { blueprint: launch.blueprint, phase: launch.phase } : "nothing launched yet")
+        json("../../dimos-gateway/runs").then(({ launch }) => launch ? { blueprint: launch.blueprint, phase: launch.phase } : "nothing launched yet")
     )
-    return h(Section, { title: "4 · Call the dimos gateway", note: "`GET /dimos/runs`: what's running" }, h(Output, { value: runs }))
+    return h(Section, { title: "4 · Call the dimos gateway", note: "`GET /dimos-gateway/runs`: what's running" }, h(Output, { value: runs }))
 }
 
 // ── 5: another app's public endpoint (dimos.yaml dim-controller: GET api/status) ──
@@ -246,7 +246,7 @@ function Skills() {
     const [args, setArgs] = useState("{}")
     const [result, setResult] = useState(undefined)
     useEffect(() => {
-        json("../../dimos/skills").then(
+        json("../../dimos-gateway/skills").then(
             (answer) => {
                 setSkills(answer.skills)
                 setChosen(answer.skills[0]?.name ?? null)
@@ -258,12 +258,12 @@ function Skills() {
     const call = () => {
         // inside then(): bad JSON in the args box shows as the result's error
         Promise.resolve()
-            .then(() => postJson("../../dimos/skills/call", { skill: skill.name, module: skill.module, args: JSON.parse(args || "{}") }))
+            .then(() => postJson("../../dimos-gateway/skills/call", { skill: skill.name, module: skill.module, args: JSON.parse(args || "{}") }))
             .then(setResult, setResult)
     }
     return h(
         Section,
-        { title: "7 · Call a skill", note: "`GET /dimos/skills` lists the running blueprint's skills; `POST /dimos/skills/call` runs one (only when you click: a skill can move the robot)" },
+        { title: "7 · Call a skill", note: "`GET /dimos-gateway/skills` lists the running blueprint's skills; `POST /dimos-gateway/skills/call` runs one (only when you click: a skill can move the robot)" },
         h(
             Row,
             { wrap: true },

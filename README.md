@@ -112,7 +112,7 @@ await json("api/internal/notes", {
 
 ```rust
 async fn hello(State(app): State<Arc<App>>) -> Json<Value> {
-    let launch = desktop(&app, "GET", "/dimos/runs", None).await.and_then(|runs| runs.get("launch").cloned());
+    let launch = desktop(&app, "GET", "/dimos-gateway/runs", None).await.and_then(|runs| runs.get("launch").cloned());
     ...
 }
 ```
@@ -163,7 +163,7 @@ import { AppProvider, Button, Card, MediaFrame, Stat } from "dimos-react"
 import { DimApp } from "./dim-app/source/dim_app.js"
 
 const app = new DimApp({
-    msgDecodeEndpoint: "../../dimos/msgs.js",
+    msgDecodeEndpoint: "../../dimos-gateway/msgs.js",
     connectOptions: { heartbeatHz: 5, heartbeatMisses: 3 },
 })
 
