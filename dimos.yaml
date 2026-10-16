@@ -26,18 +26,27 @@ zenoh:
           key_exprs: ["dimos/**/geometry_msgs.Twist"]
           permission: allow
 provides:
+    when: you want to see what dimos runs, or leave the person a note, via the Rust example
     description: "Example (Rust): a showcase dimOS app; it keeps a list of notes"
     endpoints:
         - method: GET
           path: api/hello
-          description: Who this app is, what dimos is running right now, and how many notes it holds
+          when: you need to know what dimos runs now, or how many notes the Rust example holds
+          description: >-
+              Who this app is and what dimos is running. Takes nothing; answers JSON: shape ("Rust"), app (its name),
+              unixTime (now, in seconds), running ("<blueprint> (<phase>)" of the dimos gateway's current launch, or
+              null when nothing runs) and notes (how many notes it holds)
           role: context
         - method: POST
           path: api/notes
-          description: Add a note to the app's list (the person gets a notification)
+          when: you want to leave the person a note in the Rust example app
+          description: >-
+              Add a note to the end of the app's list (kept in its data folder) and show the person a Desktop
+              notification ("A note from the agent") with it. Body: JSON {"text": "..."}. Answers {"notes": [...]},
+              the whole list after it; an empty text gets 400 {"error": ...}
           params:
               text:
                   type: string
-                  description: the note
+                  description: the note's text (trimmed; must not be empty)
     private:
         - api/internal/*
