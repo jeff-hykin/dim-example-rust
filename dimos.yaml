@@ -5,8 +5,8 @@ uses:
     "@dimos-gateway":
         - GET /runs
         - GET /msgs.js
-        - GET /skills
-        - POST /skills/call
+        - GET /runs/skills
+        - POST /runs
     "@desktop-gateway":
         - POST /api/notifications
     "@zenoh-gateway": ">=0.5 <0.6"

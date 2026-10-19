@@ -238,7 +238,7 @@ function TalkToDesktop() {
     )
 }
 
-// ── 7: skills (dimos.yaml @dimos-gateway: GET /skills, POST /skills/call); listing is safe, calling only on a click ──
+// ── 7: skills (dimos.yaml @dimos-gateway: GET /runs/skills, POST /runs); listing is safe, calling only on a click ──
 function Skills() {
     const [skills, setSkills] = useState([])
     const [error, setError] = useState(null)
@@ -246,7 +246,7 @@ function Skills() {
     const [args, setArgs] = useState("{}")
     const [result, setResult] = useState(undefined)
     useEffect(() => {
-        json("../../dimos-gateway/skills").then(
+        json("../../dimos-gateway/runs/skills").then(
             (answer) => {
                 setSkills(answer.skills)
                 setChosen(answer.skills[0]?.name ?? null)
@@ -258,12 +258,12 @@ function Skills() {
     const call = () => {
         // inside then(): bad JSON in the args box shows as the result's error
         Promise.resolve()
-            .then(() => postJson("../../dimos-gateway/skills/call", { skill: skill.name, module: skill.module, args: JSON.parse(args || "{}") }))
+            .then(() => postJson("../../dimos-gateway/runs", { skill: { module: skill.module, name: skill.name, args: JSON.parse(args || "{}") } }))
             .then(setResult, setResult)
     }
     return h(
         Section,
-        { title: "7 · Call a skill", note: "`GET /dimos-gateway/skills` lists the running blueprint's skills; `POST /dimos-gateway/skills/call` runs one (only when you click: a skill can move the robot)" },
+        { title: "7 · Call a skill", note: "`GET /dimos-gateway/runs/skills` lists the running blueprint's skills; `POST /dimos-gateway/runs` runs one (only when you click: a skill can move the robot)" },
         h(
             Row,
             { wrap: true },
