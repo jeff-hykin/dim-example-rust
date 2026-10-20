@@ -21,6 +21,9 @@ esm.sh import map (no build), with dim-app vendored instead of loaded by URL. Be
 
 Desktop runs `nix build .#dimosApp`; a `bin/dimos-app-server` in the result is started and proxied at `/apps/<name>/`.
 
+The server builds with [crane](https://github.com/ipetkov/crane): the dependencies are their own derivation, keyed only on
+`Cargo.toml` / `Cargo.lock`, so an edit to `server/` recompiles just the server (seconds, not a full rebuild).
+
 ```nix
 dimosApp = pkgs.writeShellScriptBin "dimos-app-server" ''
     exec ${server}/bin/dim-example-rust --frontend ${./frontend} "$@"
