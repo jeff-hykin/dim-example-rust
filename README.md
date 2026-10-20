@@ -80,22 +80,29 @@ let router = Router::new()
     .with_state(app);
 ```
 
+`provides:` is an OpenAPI 3.1 document (dimos.yaml spec v1.3):
+
 ```yaml
 provides:
-    endpoints:
-        - method: GET
-          path: api/hello
-          description: Who this app is, what dimos is running right now, and how many notes it holds
-          role: context
-        - method: POST
-          path: api/notes
-          description: Add a note to the app's list (the person gets a notification)
-          params:
-              text:
-                  type: string
-                  description: the note
-    private:
+    openapi: 3.1.0
+    info: { title: Example (Rust), version: 1.0.0 }
+    x-private: # only this app's own pages may call these
         - api/internal/*
+    paths:
+        /api/hello:
+            get:
+                summary: Who this app is, what dimos is running right now, and how many notes it holds
+                x-dimos-role: context # in the agent's context while the app is focused
+        /api/notes:
+            post:
+                summary: Add a note to the app's list (the person gets a notification)
+                requestBody:
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    text: { type: string, description: the note }
 ```
 
 The page calls them at relative URLs (`frontend/own_server.js`):
