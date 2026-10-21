@@ -10,7 +10,7 @@ dimos-desktop install github.com/jeff-hykin/dim-example-rust
 
 A [dimOS Desktop](https://github.com/jeff-hykin/dimos-desktop-mirror) app with a Rust server (axum): pick it for
 Bluetooth scans, UART ports, heavy video processing. Its page is the
-[html example's](https://github.com/jeff-hykin/dim-example-html) page (topics, a camera, drive, notifications, skills)
+[html example's](https://github.com/jeff-hykin/dim-example-html) page (topics, a camera, drive, notifications, RPCs)
 plus a section for this server: its whole UI is [dimos-react](https://github.com/jeff-hykin/dimos-react), loaded by an
 esm.sh import map (no build), with dim-app vendored instead of loaded by URL. Below: the server side. How apps work:
 **[Making a dimOS app](https://github.com/jeff-hykin/dimos-desktop-mirror/blob/main/docs/create-apps/index.md)**.

@@ -5,7 +5,7 @@ uses:
     "@dimos-gateway":
         - GET /runs
         - GET /msgs.js
-        - GET /runs/skills
+        - GET /runs/rpcs
         - POST /runs
     "@desktop-gateway":
         - POST /api/notifications

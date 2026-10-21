@@ -238,47 +238,47 @@ function TalkToDesktop() {
     )
 }
 
-// ── 7: skills (dimos.yaml @dimos-gateway: GET /runs/skills, POST /runs); listing is safe, calling only on a click ──
-function Skills() {
-    const [skills, setSkills] = useState([])
+// ── 7: RPCs (dimos.yaml @dimos-gateway: GET /runs/rpcs, POST /runs); listing is safe, calling only on a click ──
+function Rpcs() {
+    const [rpcs, setRpcs] = useState([])
     const [error, setError] = useState(null)
     const [chosen, setChosen] = useState(null)
     const [args, setArgs] = useState("{}")
     const [result, setResult] = useState(undefined)
     useEffect(() => {
-        json("../../dimos-gateway/runs/skills").then(
+        json("../../dimos-gateway/runs/rpcs").then(
             (answer) => {
-                setSkills(answer.skills)
-                setChosen(answer.skills[0]?.name ?? null)
+                setRpcs(answer.rpcs)
+                setChosen(answer.rpcs[0]?.rpc ?? null)
             },
             (error) => setError(error),
         )
     }, [])
-    const skill = skills.find(({ name }) => name === chosen)
+    const picked = rpcs.find(({ rpc }) => rpc === chosen)
     const call = () => {
         // inside then(): bad JSON in the args box shows as the result's error
         Promise.resolve()
-            .then(() => postJson("../../dimos-gateway/runs", { skill: { module: skill.module, name: skill.name, args: JSON.parse(args || "{}") } }))
+            .then(() => postJson("../../dimos-gateway/runs", { rpc: { module: picked.module, name: picked.name, args: JSON.parse(args || "{}") } }))
             .then(setResult, setResult)
     }
     return h(
         Section,
-        { title: "7 · Call a skill", note: "`GET /dimos-gateway/runs/skills` lists the running blueprint's skills; `POST /dimos-gateway/runs` runs one (only when you click: a skill can move the robot)" },
+        { title: "7 · Call an RPC", note: "`GET /dimos-gateway/runs/rpcs` lists the running blueprint's RPCs (skills have skill: true); `POST /dimos-gateway/runs` calls one (only when you click: an RPC can move the robot)" },
         h(
             Row,
             { wrap: true },
-            h(Select, { value: chosen, onChange: setChosen, options: skills.map(({ name, module }) => [name, `${module}.${name}`]), placeholder: "no skills" }),
+            h(Select, { value: chosen, onChange: setChosen, options: rpcs.map(({ rpc, skill }) => [rpc, skill ? `${rpc} (skill)` : rpc]), placeholder: "no RPCs" }),
             h(TextInput, { value: args, onChange: setArgs, mono: true, spellCheck: false }),
-            h(Button, { variant: "primary", disabled: !skill, onClick: call }, "Call"),
+            h(Button, { variant: "primary", disabled: !picked, onClick: call }, "Call"),
         ),
         h(
             Text,
             { muted: true, small: true },
             error
                 ? `✗ ${error.message}`
-                : skill
-                ? `${skill.description} (params: ${Object.keys(skill.params.properties ?? {}).join(", ") || "none"})`
-                : "no skills: nothing running",
+                : picked
+                ? `${picked.doc || picked.rpc} (params: ${(picked.params ?? []).map(({ name }) => name).join(", ") || "none"})`
+                : "no RPCs: nothing running",
         ),
         h(Output, { value: result }),
     )
@@ -301,7 +301,7 @@ function App() {
         h(Gateway),
         h(OtherApp),
         h(TalkToDesktop),
-        h(Skills),
+        h(Rpcs),
         h(OwnServer),
     )
 }
