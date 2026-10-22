@@ -1,6 +1,6 @@
 # the app's contract with Desktop: https://github.com/jeff-hykin/dimos-desktop-mirror/blob/main/docs/create-apps/index.md
 title: Example (Rust)
-version: "0.1.19"
+version: "0.1.20"
 spec-version: v1.3
 uses:
     "@dimos-gateway":
