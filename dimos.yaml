@@ -1,12 +1,13 @@
 # the app's contract with Desktop: https://github.com/jeff-hykin/dimos-desktop-mirror/blob/main/docs/create-apps/index.md
 title: Example (Rust)
+version: "0.1.19"
 spec-version: v1.3
 uses:
     "@dimos-gateway":
-        - GET /runs
+        - GET /active
         - GET /msgs.js
-        - GET /runs/rpcs
-        - POST /runs
+        - GET /active/modules
+        - POST /active/modules/{id}/rpcs/{name}
     "@desktop-gateway":
         - POST /api/notifications
     "@zenoh-gateway": ">=0.5 <0.6"

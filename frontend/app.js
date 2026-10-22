@@ -205,12 +205,14 @@ function Camera() {
     )
 }
 
-// ── 4: the dimos gateway (dimos.yaml @dimos-gateway: GET /runs) ──
+// ── 4: the dimos gateway (dimos.yaml @dimos-gateway: GET /active) ──
 function Gateway() {
     const runs = useLoad(() =>
-        json("../../dimos-gateway/runs").then(({ launch }) => launch ? { blueprint: launch.blueprint, phase: launch.phase } : "nothing launched yet")
+        json("../../dimos-gateway/active").then(({ running, blueprint, launch }) =>
+            running ? { blueprint, phase: launch?.phase ?? "running" } : launch ? { blueprint: launch.blueprint, phase: launch.phase } : "nothing launched yet"
+        )
     )
-    return h(Section, { title: "4 · Call the dimos gateway", note: "`GET /dimos-gateway/runs`: what's running" }, h(Output, { value: runs }))
+    return h(Section, { title: "4 · Call the dimos gateway", note: "`GET /dimos-gateway/active`: what's running" }, h(Output, { value: runs }))
 }
 
 // ── 5: another app's public endpoint (dimos.yaml dim-controller: GET api/status) ──
@@ -238,7 +240,7 @@ function TalkToDesktop() {
     )
 }
 
-// ── 7: RPCs (dimos.yaml @dimos-gateway: GET /runs/rpcs, POST /runs); listing is safe, calling only on a click ──
+// ── 7: RPCs (dimos.yaml @dimos-gateway: GET /active/modules, POST /active/modules/{id}/rpcs/{name}); listing is safe, calling only on a click ──
 function Rpcs() {
     const [rpcs, setRpcs] = useState([])
     const [error, setError] = useState(null)
@@ -246,10 +248,12 @@ function Rpcs() {
     const [args, setArgs] = useState("{}")
     const [result, setResult] = useState(undefined)
     useEffect(() => {
-        json("../../dimos-gateway/runs/rpcs").then(
-            (answer) => {
-                setRpcs(answer.rpcs)
-                setChosen(answer.rpcs[0]?.rpc ?? null)
+        json("../../dimos-gateway/active/modules").then(
+            ({ modules }) => {
+                // each running module instance's RPCs; `rpc` (module.name) names one in the picker
+                const all = modules.flatMap(({ rpcs }) => rpcs).map((rpc) => ({ ...rpc, rpc: `${rpc.module}.${rpc.name}` }))
+                setRpcs(all)
+                setChosen(all[0]?.rpc ?? null)
             },
             (error) => setError(error),
         )
@@ -258,12 +262,12 @@ function Rpcs() {
     const call = () => {
         // inside then(): bad JSON in the args box shows as the result's error
         Promise.resolve()
-            .then(() => postJson("../../dimos-gateway/runs", { rpc: { module: picked.module, name: picked.name, args: JSON.parse(args || "{}") } }))
+            .then(() => postJson(`../../dimos-gateway/active/modules/${encodeURIComponent(picked.module)}/rpcs/${encodeURIComponent(picked.name)}`, { kwargs: JSON.parse(args || "{}") }))
             .then(setResult, setResult)
     }
     return h(
         Section,
-        { title: "7 · Call an RPC", note: "`GET /dimos-gateway/runs/rpcs` lists the running blueprint's RPCs (skills have skill: true); `POST /dimos-gateway/runs` calls one (only when you click: an RPC can move the robot)" },
+        { title: "7 · Call an RPC", note: "`GET /dimos-gateway/active/modules` lists the running blueprint's modules and their RPCs (skills have skill: true); `POST /dimos-gateway/active/modules/{id}/rpcs/{name}` calls one (only when you click: an RPC can move the robot)" },
         h(
             Row,
             { wrap: true },

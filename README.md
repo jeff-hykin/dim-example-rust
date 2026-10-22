@@ -122,7 +122,7 @@ await json("api/internal/notes", {
 
 ```rust
 async fn hello(State(app): State<Arc<App>>) -> Json<Value> {
-    let launch = desktop(&app, "GET", "/dimos-gateway/runs", None).await.and_then(|runs| runs.get("launch").cloned());
+    let launch = desktop(&app, "GET", "/dimos-gateway/active", None).await.and_then(|active| active.get("launch").cloned());
     ...
 }
 ```
