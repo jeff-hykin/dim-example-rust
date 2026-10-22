@@ -122,7 +122,7 @@ await json("api/internal/notes", {
 
 ```rust
 async fn hello(State(app): State<Arc<App>>) -> Json<Value> {
-    let launch = desktop(&app, "GET", "/dimos-gateway/active", None).await.and_then(|active| active.get("launch").cloned());
+    let launch = desktop(&app, "GET", "/gateways/dimos/active", None).await.and_then(|active| active.get("launch").cloned());
     ...
 }
 ```
@@ -133,7 +133,7 @@ When the agent posts a note, the server tells the person through Desktop.
 
 ```rust
 let notice = json!({ "title": "A note from the agent", "body": text, "app": app.name });
-desktop(&app, "POST", "/api/notifications", Some(notice)).await;
+desktop(&app, "POST", "/gateways/desktop/ui/notifications", Some(notice)).await;
 ```
 
 ![the notification after the agent POSTs api/notes](docs/images/agent-note.png)
@@ -158,7 +158,7 @@ notes_file: PathBuf::from(data_dir).join("notes.json"),
             "react/": "https://esm.sh/react@19.2.0/",
             "react-dom": "https://esm.sh/react-dom@19.2.0",
             "react-dom/": "https://esm.sh/react-dom@19.2.0/",
-            "dimos-react": "https://esm.sh/gh/jeff-hykin/dimos-react@v0.2.0-beta16/src/index.ts?external=react,react-dom,three"
+            "dimos-react": "https://esm.sh/gh/jeff-hykin/dimos-react@v0.3.1/src/index.ts?external=react,react-dom,three"
         }
     }
 </script>
@@ -173,7 +173,7 @@ import { AppProvider, Button, Card, MediaFrame, Stat } from "dimos-react"
 import { DimApp } from "./dim-app/source/dim_app.js"
 
 const app = new DimApp({
-    msgDecodeEndpoint: "../../dimos-gateway/msgs.js",
+    msgDecodeEndpoint: "../../gateways/dimos/msgs.js",
     connectOptions: { heartbeatHz: 5, heartbeatMisses: 3 },
 })
 
@@ -207,7 +207,8 @@ zenoh:
 ```
 
 Refresh the vendored SDK:
-`deno run -A https://raw.githubusercontent.com/jeff-hykin/dim-app/v0.20.4/tools/vendor.js frontend/dim-app`.
+`cd frontend/dim-app && for f in $(find source -type f); do curl -fsSL -o "$f" "https://raw.githubusercontent.com/jeff-hykin/dim-app/v0.23.1/$f"; done`
+(each file it already has, at that tag).
 Each page snippet is in the [html example's README](https://github.com/jeff-hykin/dim-example-html).
 
 ## Develop

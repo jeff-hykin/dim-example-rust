@@ -58,7 +58,7 @@ fn add_note(app: &App, text: String) -> Vec<String> {
     notes
 }
 
-// ── calls out of the app: Desktop and the dimos gateway (declared in dimos.yaml dimos-api: too) ──
+// ── calls out of the app: Desktop and the dimos gateway (declared in dimos.yaml uses: too) ──
 async fn desktop(app: &Arc<App>, method: &'static str, path: &'static str, body: Option<Value>) -> Option<Value> {
     let url = format!("{}{path}", app.desktop_url);
     tokio::task::spawn_blocking(move || {
@@ -75,7 +75,7 @@ async fn desktop(app: &Arc<App>, method: &'static str, path: &'static str, body:
 }
 
 async fn hello(State(app): State<Arc<App>>) -> Json<Value> {
-    let launch = desktop(&app, "GET", "/dimos-gateway/active", None).await.and_then(|active| active.get("launch").cloned());
+    let launch = desktop(&app, "GET", "/gateways/dimos/active", None).await.and_then(|active| active.get("launch").cloned());
     let running = launch
         .filter(|l| !l.is_null())
         .map(|l| format!("{} ({})", l["blueprint"].as_str().unwrap_or("?"), l["phase"].as_str().unwrap_or("?")));
@@ -102,7 +102,7 @@ async fn agent_note(State(app): State<Arc<App>>, Json(note): Json<Note>) -> Resp
     let notes = add_note(&app, text.clone());
     // a server's calls carry no Referer, so they're never refused, but they're declared in dimos.yaml all the same
     let notice = json!({ "title": "A note from the agent", "body": text, "app": app.name });
-    desktop(&app, "POST", "/api/notifications", Some(notice)).await;
+    desktop(&app, "POST", "/gateways/desktop/ui/notifications", Some(notice)).await;
     Json(json!({ "notes": notes })).into_response()
 }
 

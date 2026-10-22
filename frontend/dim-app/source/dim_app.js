@@ -2,7 +2,7 @@
 // dimos stream and gets decoded messages, and publishes plain objects.
 //
 //     import { DimApp } from "./dim-app/source/dim_app.js"
-//     const app = new DimApp({ msgDecodeEndpoint: "../../dimos-gateway/msgs.js" })
+//     const app = new DimApp({ msgDecodeEndpoint: "../../gateways/dimos/msgs.js" })
 //     const off = app.subscribe("odom", (odom, info) => draw(odom.pose.pose.position)) // info: { key, type, receivedAt }
 //     await app.publish("cmd_vel", "geometry_msgs.Twist", { linear: { x: 0.3 } })
 //
@@ -14,7 +14,7 @@
 import { getZenoh, updatedOptions } from "./zenoh.js"
 import { rosCodec, rosTypeName, rosTypeOfSample } from "./ros.js"
 
-const MISSING_ENDPOINT = 'DimApp needs msgDecodeEndpoint, e.g. "../../dimos-gateway/msgs.js" ' +
+const MISSING_ENDPOINT = 'DimApp needs msgDecodeEndpoint, e.g. "../../gateways/dimos/msgs.js" ' +
     '(and declare GET /msgs.js under uses: "@dimos-gateway" in dimos.yaml)'
 
 /** `dimos/<topic>` for a dimos topic name ("odom", "/odom" and "dimos/odom" are the same topic). */

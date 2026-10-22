@@ -1,7 +1,7 @@
 // The example page: the html example's page plus section 8, this app's own server (own_server.js). Plain ES modules,
 // no build step. Two libraries:
 //   dimos-react: the whole UI (Desktop's theme followed live, cards, buttons, inputs, video, toasts)
-//   dim-app's DimApp (vendored into ./dim-app with dim-app's tools/vendor.js): the page's connection to Desktop's zenoh-gateway, plus the codec ../../dimos-gateway/msgs.js
+//   dim-app's DimApp (vendored into ./dim-app with dim-app's tools/vendor.js): the page's connection to Desktop's zenoh-gateway, plus the codec ../../gateways/dimos/msgs.js
 //     from the dimos gateway (dimos.yaml `@dimos-gateway: GET /msgs.js`), generated from the dimos that's
 //     running, so it always matches it. dimos-react's hooks share that one connection.
 import { createRoot } from "react-dom/client"
@@ -30,7 +30,7 @@ import { OwnServer } from "./own_server.js"
 
 // dimos's zenoh keys are `dimos/<topic>/<message type>`; DimApp decodes and encodes them with msgs.js.
 const app = new DimApp({
-    msgDecodeEndpoint: "../../dimos-gateway/msgs.js",
+    msgDecodeEndpoint: "../../gateways/dimos/msgs.js",
     // a heartbeat lets the gateway publish our deadman (a zero Twist) if this page dies mid-drive
     connectOptions: { heartbeatHz: 5, heartbeatMisses: 3 },
 })
@@ -97,7 +97,7 @@ function Odom() {
     }, [topic])
     return h(
         Section,
-        { title: "1 · Subscribe to a topic and decode it", note: `zenoh-gateway → \`dimos/${topic}/geometry_msgs.PoseStamped\` → /dimos-gateway/msgs.js` },
+        { title: "1 · Subscribe to a topic and decode it", note: `zenoh-gateway → \`dimos/${topic}/geometry_msgs.PoseStamped\` → /gateways/dimos/msgs.js` },
         h(
             Row,
             { gap: 28, wrap: true },
@@ -208,11 +208,11 @@ function Camera() {
 // ── 4: the dimos gateway (dimos.yaml @dimos-gateway: GET /active) ──
 function Gateway() {
     const runs = useLoad(() =>
-        json("../../dimos-gateway/active").then(({ running, blueprint, launch }) =>
+        json("../../gateways/dimos/active").then(({ running, blueprint, launch }) =>
             running ? { blueprint, phase: launch?.phase ?? "running" } : launch ? { blueprint: launch.blueprint, phase: launch.phase } : "nothing launched yet"
         )
     )
-    return h(Section, { title: "4 · Call the dimos gateway", note: "`GET /dimos-gateway/active`: what's running" }, h(Output, { value: runs }))
+    return h(Section, { title: "4 · Call the dimos gateway", note: "`GET /gateways/dimos/active`: what's running" }, h(Output, { value: runs }))
 }
 
 // ── 5: another app's public endpoint (dimos.yaml dim-controller: GET api/status) ──
@@ -225,7 +225,7 @@ function OtherApp() {
 function TalkToDesktop() {
     const toast = useToast()
     const notify = () =>
-        postJson("../../api/notifications", { title: "Hello from the example app", body: "POST /api/notifications", kind: "ok" })
+        postJson("../../gateways/desktop/ui/notifications", { title: "Hello from the example app", body: "POST /gateways/desktop/ui/notifications", kind: "ok" })
             .catch((error) => toast.error(error.message))
     return h(
         Section,
@@ -248,7 +248,7 @@ function Rpcs() {
     const [args, setArgs] = useState("{}")
     const [result, setResult] = useState(undefined)
     useEffect(() => {
-        json("../../dimos-gateway/active/modules").then(
+        json("../../gateways/dimos/active/modules").then(
             ({ modules }) => {
                 // each running module instance's RPCs; `rpc` (module.name) names one in the picker
                 const all = modules.flatMap(({ rpcs }) => rpcs).map((rpc) => ({ ...rpc, rpc: `${rpc.module}.${rpc.name}` }))
@@ -262,12 +262,12 @@ function Rpcs() {
     const call = () => {
         // inside then(): bad JSON in the args box shows as the result's error
         Promise.resolve()
-            .then(() => postJson(`../../dimos-gateway/active/modules/${encodeURIComponent(picked.module)}/rpcs/${encodeURIComponent(picked.name)}`, { kwargs: JSON.parse(args || "{}") }))
+            .then(() => postJson(`../../gateways/dimos/active/modules/${encodeURIComponent(picked.module)}/rpcs/${encodeURIComponent(picked.name)}`, { kwargs: JSON.parse(args || "{}") }))
             .then(setResult, setResult)
     }
     return h(
         Section,
-        { title: "7 · Call an RPC", note: "`GET /dimos-gateway/active/modules` lists the running blueprint's modules and their RPCs (skills have skill: true); `POST /dimos-gateway/active/modules/{id}/rpcs/{name}` calls one (only when you click: an RPC can move the robot)" },
+        { title: "7 · Call an RPC", note: "`GET /gateways/dimos/active/modules` lists the running blueprint's modules and their RPCs (skills have skill: true); `POST /gateways/dimos/active/modules/{id}/rpcs/{name}` calls one (only when you click: an RPC can move the robot)" },
         h(
             Row,
             { wrap: true },
