@@ -170,3 +170,22 @@ async fn main() {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    /// Cargo.toml's version is the app's version, so it has to be the one dimos.yaml ships: `CARGO_PKG_VERSION` is
+    /// what the binary reports of itself (a log line, a recording's metadata), and a release that bumps only
+    /// dimos.yaml leaves that number behind — a real app did it for thirty releases. The test runs inside
+    /// `nix build .#dimosApp`, which CI runs, so the two can't be released apart. `dimos-desktop app check .` says
+    /// the same thing from the outside, for an app with no build of its own to hang a test on.
+    #[test]
+    fn the_crate_version_is_the_version_dimos_yaml_ships() {
+        let yaml = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/dimos.yaml"));
+        let shipped = yaml
+            .lines()
+            .find_map(|line| line.strip_prefix("version:"))
+            .map(|value| value.trim().trim_matches('"').trim_matches('\''))
+            .expect("dimos.yaml has a version:");
+        assert_eq!(env!("CARGO_PKG_VERSION"), shipped, "Cargo.toml and dimos.yaml disagree");
+    }
+}
