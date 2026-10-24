@@ -8,3 +8,5 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       # what Desktop runs on install
       - run: nix build .#dimosApp --print-build-logs
+      # Cargo.toml's version is the app's own version, and the build can't check it (it never reads dimos.yaml)
+      - run: ./scripts/check_version.sh
