@@ -207,7 +207,7 @@ zenoh:
 ```
 
 Refresh the vendored SDK:
-`cd frontend/dim-app && for f in $(find source -type f); do curl -fsSL -o "$f" "https://raw.githubusercontent.com/jeff-hykin/dim-app/v0.23.2/$f"; done`
+`cd frontend/dim-app && for f in $(find source -type f); do curl -fsSL -o "$f" "https://raw.githubusercontent.com/jeff-hykin/dim-app/v0.25.1/$f"; done`
 (each file it already has, at that tag).
 Each page snippet is in the [html example's README](https://github.com/jeff-hykin/dim-example-html).
 
