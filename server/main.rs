@@ -2,8 +2,14 @@
 //! Desktop gives.
 //!
 //! What Desktop passes: one env var, `DIMOS_APP`, a JSON object (Desktop's docs/apps.md, "dimos-app-server"):
-//! `{ version, name, socket, url, path, dataDir, desktopUrl, zenohGatewayUrl, zenohConnect, zenohNamespace, zenohPrefix,
-//!   dimosDir, dimosPython, recordingsDir }`. Read the fields you use and ignore the rest: new ones can appear.
+//! `{ version, name, socket, url, path, dataDir, desktopUrl, zenohGatewayUrl, zenohGatewayToken, zenohConnect,
+//!   zenohNamespace, zenohPrefix, dimosDir, dimosPython, recordingsDir, machineId, secrets }`. Read the fields you use
+//! and ignore the rest: new ones can appear. Two are not like the others — `secrets` is the app's own secrets (its
+//! `zenohGatewayToken` among them) and is never printed or passed on, and where recordings go is really the dimos
+//! gateway's answer (`GET /gateways/dimos/history/recordings`), `recordingsDir` being the offline fallback.
+//!
+//! Which of them this app needs is declared in its dimos.yaml, `uses: "@desktop-gateway": env:` (spec v1.5), so
+//! `dimos-desktop app check` can say when a Desktop doesn't set one instead of the app finding out at runtime.
 //! Requests arrive with the app's path (`/apps/<name>`) already removed: `/api/hello`, `/`, `/app.js`.
 //!
 //! The API, as dimos.yaml declares it:

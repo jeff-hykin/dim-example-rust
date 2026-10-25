@@ -1,7 +1,7 @@
 # the app's contract with Desktop: https://github.com/jeff-hykin/dimos-desktop-mirror/blob/main/docs/create-apps/index.md
 title: Example (Rust)
-version: "0.2.2"
-spec-version: v1.4
+version: "0.3.0"
+spec-version: v1.5
 uses:
     "@dimos-gateway":
         - GET /active
@@ -9,7 +9,16 @@ uses:
         - GET /active/modules
         - POST /active/modules/{id}/rpcs/{name}
     "@desktop-gateway":
-        - POST /ui/notifications
+        # spec v1.5: the values this app needs of Desktop's environment, keyed per value of DIMOS_APP rather
+        # than per variable (every app gets DIMOS_APP, so naming the variable says nothing). `app check`
+        # reports one Desktop doesn't set, and a launch that can't resolve one says so in the app's own log.
+        env:
+            DIMOS_APP.socket: the unix socket this server binds (--port stands in outside Desktop)
+            DIMOS_APP.name: the name this app was installed under
+            DIMOS_APP.dataDir: its own folder, which an update doesn't replace, so the notes go here
+            DIMOS_APP.desktopUrl: Desktop's loopback origin, which the dimos gateway is asked through
+        endpoints:
+            - POST /ui/notifications
     "@zenoh-gateway": ">=0.5 <0.6"
     dim-controller:
         - GET api/status

@@ -1,6 +1,6 @@
 [package]
 name = "dim-example-rust"
-version = "0.2.2"
+version = "0.3.0"
 edition = "2021"
 # nixos-25.05's rustc: Cargo.lock is resolved to versions it builds (CARGO_RESOLVER_INCOMPATIBLE_RUST_VERSIONS=fallback cargo update)
 rust-version = "1.86"
